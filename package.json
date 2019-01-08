@@ -1,6 +1,6 @@
 {
   "name": "indexedbwrapper",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Pure HTML maker For Copy book iamges data to print by Convenience Store copy machine.",
   "main": "index.js",
   "scripts": {

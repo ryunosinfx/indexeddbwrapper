@@ -2,7 +2,7 @@ import constant from './constant'
 import { IndexeddbHelper } from './indexeddbHelper'
 const initQueue = [];
 let dbName = constant.dbName;
-export default class IdbWrapper {
+export class IdbWrapper {
 
 	constructor(objectStoreName, keypathName = "pk") {
 		if (constant.idbh === undefined) {

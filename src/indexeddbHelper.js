@@ -14,7 +14,7 @@ const cmdCreateStore = "cmdCreateStore";
 const cmdGetObjectStoreNames = "cmdGetObjectStoreNames";
 export class IndexeddbHelper {
 	constructor(dbName) {
-		this.core = new IndexeddbCore();
+		this.core = new IndexeddbCore(dbName);
 		this.queue = [];
 		this.lastTaskMode = null;
 		this.lastLockTime = new Date()

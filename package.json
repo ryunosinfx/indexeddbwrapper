@@ -4,14 +4,14 @@
   "description": "Pure HTML maker For Copy book iamges data to print by Convenience Store copy machine.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/ryunosinfx/indexedbwrapper.git"
   },
   "keywords": [
-    "Dojinshi manga"
+    "indexeddb wrapper kvs"
   ],
   "author": "ryunosinfx",
   "license": "MIT",

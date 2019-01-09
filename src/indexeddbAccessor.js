@@ -2,16 +2,18 @@ import constant from './constant'
 import { IndexeddbHelper } from './indexeddbHelper'
 const initQueue = [];
 let dbName = constant.dbName;
-export class IdbWrapper {
-
-	constructor(objectStoreName, keypathName = "pk") {
-		if (constant.idbh === undefined) {
-			constant.idbh = new IndexeddbHelper(dbName);
+// stock par db
+const idbHelperMap = new Map();
+export class IndexeddbAccessor {
+	constructor(objectStoreName, keypathName = "pk", currentDbName = dbName) {
+		if (!idbHelperMap.has(currentDbName)) {
+			this.idbh = new IndexeddbHelper(currentDbName);
+			idbHelperMap.put(currentDbName, this.idbh);
+		} else {
+			this.idbh = idbHelperMap.get(currentDbName);
 		}
-		this.idbh = constant.idbh;
 		this.keyPathName = keypathName;
 		this.objectStoreName = objectStoreName;
-		//tableName, keyPathName
 	}
 	static setDbName(dbNameNew) {
 		dbName = dbNameNew;
@@ -25,15 +27,6 @@ export class IdbWrapper {
 					reject(e);
 					throw e;
 				});
-		});
-	}
-	isFished() {
-		return new Promise((reslve, reject) => {
-			this.firstPromise.then(() => {
-				reslve(true);
-			}, (e) => {
-				throw e;
-			})
 		});
 	}
 	async saveDataDefault(key, data, callback) {

@@ -170,7 +170,7 @@ export class IndexeddbCore {
 			req.onsuccess = (event) => {
 				let cursor = event.target.result;
 				if (cursor) {
-					console.log(cursor.value)
+					// console.log(cursor.value)
 					list.push(cursor.value);
 					if (isGetFirstOne) {
 						resolve(list[0]);

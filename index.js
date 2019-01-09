@@ -1,2 +1,2 @@
-import { IdbWrapper } from './src/idbWrapper'
-export const indexedbwrapper = IdbWrapper;
+import { idbw } from './src/indexeddbWrapper'
+export const indexedbwrapper = idbw;

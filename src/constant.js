@@ -3,5 +3,6 @@ const domain = window.location;
 export default {
 	dbName: "IDBWrapper",
 	ua: ua,
-	domain: domain
+	domain: domain,
+	keypathName: "pk",
 }

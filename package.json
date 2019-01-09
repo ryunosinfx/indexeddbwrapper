@@ -1,7 +1,7 @@
 {
   "name": "indexedbwrapper",
-  "version": "0.0.4",
-  "description": "Pure HTML maker For Copy book iamges data to print by Convenience Store copy machine.",
+  "version": "0.0.5",
+  "description": "A indexeddb wrapper as like kvs.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

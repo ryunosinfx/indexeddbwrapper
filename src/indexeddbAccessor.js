@@ -29,62 +29,54 @@ export class IndexeddbAccessor {
 				});
 		});
 	}
-	async saveDataDefault(key, data, callback) {
+	async put(key, data, callback) {
 		const record = {
 			data: data
 		};
 		record[this.keyPathName] = key;
 		//console.log("saveDataDefault 001:" + key + "/" + data);
-		await this.saveData(record, undefined, callback);
+		await this.putRecord(record, undefined, callback);
 		//console.log("saveDataDefault 002:" + key + "/" + data);
 	}
-	async put(key, data, callback) {
-		await this.saveDataDefault(dataObj, key, callback);
-	}
-	async saveData(dataObj, key, callback) {
+	async putRecord(record, key, callback) {
 		//console.log("saveData 001:" + key + "/" + JSON.stringify(dataObj)+"/dataObj.data:"+dataObj.data);
-		const storeData = dataObj;
+		const storeData = record;
 		//console.log("saveData 002:" + key + "/" + dataObj[this.keyPathName]);
-		if (dataObj[this.keyPathName] === undefined) {
+		if (record[this.keyPathName] === undefined) {
 			storeData = {
-				data: dataObj
+				data: record
 			};
 			storeData[this.keyPathName] = key;
 		} else if (key !== undefined) {}
 		//console.log("saveData 003:" + key + "/" + dataObj +"/this.objectStoreName:"+this.objectStoreName);
 		const value = await this.idbh.insertUpdate(this.objectStoreName, this.keyPathName, storeData, callback);
 		//console.log("saveData 004:" + key + "/" + dataObj+"/"+JSON.stringify(value)+"/"+value.data.data);
+		return value;
 	}
 	async getAsMap(keys) {
-		return await this.loadDataMap(keys);
-	}
-	async loadDataMap(keys) {
 		if (keys !== undefined) {
 			const recordAsLoadedData = await this.idbh.selectByKeys(this.objectStoreName, keys);
 			return recordAsLoadedData;
 		}
 		return null;
 	}
-	async get(key) {
-		return await this.loadData(key);
-	}
-	async loadData(key) {
+	async getRecord(key) {
 		if (key !== undefined) {
 			const recordAsLoadedData = await this.idbh.selectByKey(this.objectStoreName, key);
 			return recordAsLoadedData;
 		}
 		return null;
 	}
-	async loadDataDefault(key) {
-		const recordAsDefaultLoad = await this.loadData(key);
+	async get(key) {
+		const recordAsDefaultLoad = await this.getRecord(key);
 		return recordAsDefaultLoad === undefined || recordAsDefaultLoad === null ?
 			null :
 			recordAsDefaultLoad.data;
 	}
-	async loadAllData() {
+	async getAll() {
 		return await this.idbh.selectAll(this.objectStoreName);
 	}
-	async deleteData(key) {
+	async delete(key) {
 		if (key !== undefined) {
 			return await this.idbh.delete(this.objectStoreName, key);
 		}

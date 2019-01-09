@@ -8,7 +8,7 @@ export class IndexeddbAccessor {
 	constructor(objectStoreName, keypathName = constant.keypathName, currentDbName = dbName) {
 		if (!idbHelperMap.has(currentDbName)) {
 			this.idbh = new IndexeddbHelper(currentDbName);
-			idbHelperMap.put(currentDbName, this.idbh);
+			idbHelperMap.set(currentDbName, this.idbh);
 		} else {
 			this.idbh = idbHelperMap.get(currentDbName);
 		}

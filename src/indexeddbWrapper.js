@@ -12,7 +12,7 @@ export class idbw {
 			return idbAccessors.get(obName);
 		}
 		const accessor = new IndexeddbAccessor(obName, keypathName, this.dbName);
-		idbAccessors.put(obName, accessor);
+		idbAccessors.set(obName, accessor);
 		await accessor.init();
 		return accessor;
 	}

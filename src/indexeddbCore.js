@@ -163,20 +163,40 @@ export class IndexeddbCore {
 	};
 	_selectAllExecute(objectStore, range, isGetFirstOne, offset, count, callback) {
 		return new Promise((resolve, reject) => {
+			const isValidCallBack = typeof offset === "function";
+			const isOnLimit = typeof offset === "number" && typeof count === "number" && offset > 0 && count > 0;
+			const endCount = offset + count;
 			const list = [];
+			let rowCount = 0;
 			let req = range === undefined ?
 				objectStore.openCursor() :
 				objectStore.openCursor(range);
 			req.onsuccess = (event) => {
 				let cursor = event.target.result;
+				let count = 0;
 				if (cursor) {
 					const value = cursor.value;
+					if (isValidCallBack && !callback(value)) {
+						cursor.continue();
+						return;
+					}
+					if (isOnLimit) {
+						if (offset > rowCount) {
+							rowCount++;
+							cursor.continue();
+							return;
+						} else if (endCount < rowCount) {
+							resolve(list);
+							return;
+						}
+					}
 					// console.log(cursor.value)
 					list.push(value);
 					if (isGetFirstOne) {
 						resolve(list[0]);
 						return;
 					}
+					rowCount++;
 					cursor.continue();
 				} else {
 					resolve(list);
@@ -186,7 +206,6 @@ export class IndexeddbCore {
 				reject(e);
 			};
 		});
-
 	}
 	//public
 	async selectByKey(payload) {
@@ -283,7 +302,7 @@ export class IndexeddbCore {
 	}
 	//private
 	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
-		for(let recoord of data){
+		for (let recoord of data) {
 			await this._insertUpdate(tableName, keyPathName, record, callback);
 		}
 	}

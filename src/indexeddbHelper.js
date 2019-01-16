@@ -141,7 +141,7 @@ export class IndexeddbHelper {
 	async execCmd(cmd, data) {
 		// console.log("cmd:" + cmd + "/data:" + data);
 		if (cmdSelectAll === cmd) {
-			return await this.core._selectAll(data.tableName, data.range, data.direction);
+			return await this.core._selectAll(data.tableName, data.range, data.direction, data.offset, data.limmitCount);
 		}
 		if (cmdSelectByKey === cmd) {
 			return await this.core._selectByKey(data.tableName, data.key);
@@ -173,8 +173,15 @@ export class IndexeddbHelper {
 	}
 
 	//Select In-line-Keyで返す。
-	async selectAll(tableName, range, direction) {
-		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction });
+	async selectAllForwardMatch(tableName, key, direction, offset, limmitCount) {
+		const nextKey = key.slice(0, -1) + String.fromCharCode(key.slice(-1)
+			.charCodeAt() + 1);
+		const range = IDBKeyRange.bound(str, nextStr, false, true);
+		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
+	};
+	//Select In-line-Keyで返す。
+	async selectAll(tableName, range, direction, offset, limmitCount) {
+		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
 	};
 	//Select In-line-return promise;Keyで返す。
 	async selectByKey(tableName, key) {

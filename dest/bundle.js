@@ -521,27 +521,48 @@ class IndexeddbCore {
 		return await this._selectAll(tableName, range, condetions);
 	}
 	//Select In-line-Keyで返す。
-	async _selectAll(tableName, range, direction) {
+	async _selectAll(tableName, range, direction, offset, count, callback) {
 		const db = await this.getOpenDB()
 			.catch(this.throwNewError("_selectAll->getOpenDB tableName:" + tableName));
 		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
-		return await this._selectAllExecute(objectStore, range);
+		return await this._selectAllExecute(objectStore, range, false, offset, count, callback);
 	};
-	_selectAllExecute(objectStore, range, isGetFirstOne) {
+	_selectAllExecute(objectStore, range, isGetFirstOne, offset, count, callback) {
 		return new Promise((resolve, reject) => {
+			const isValidCallBack = typeof offset === "function";
+			const isOnLimit = typeof offset === "number" && typeof count === "number" && offset > 0 && count > 0;
+			const endCount = offset + count;
 			const list = [];
+			let rowCount = 0;
 			let req = range === undefined ?
 				objectStore.openCursor() :
 				objectStore.openCursor(range);
 			req.onsuccess = (event) => {
 				let cursor = event.target.result;
+				let count = 0;
 				if (cursor) {
+					const value = cursor.value;
+					if (isValidCallBack && !callback(value)) {
+						cursor.continue();
+						return;
+					}
+					if (isOnLimit) {
+						if (offset > rowCount) {
+							rowCount++;
+							cursor.continue();
+							return;
+						} else if (endCount < rowCount) {
+							resolve(list);
+							return;
+						}
+					}
 					// console.log(cursor.value)
-					list.push(cursor.value);
+					list.push(value);
 					if (isGetFirstOne) {
 						resolve(list[0]);
 						return;
 					}
+					rowCount++;
 					cursor.continue();
 				} else {
 					resolve(list);
@@ -551,7 +572,6 @@ class IndexeddbCore {
 				reject(e);
 			};
 		});
-
 	}
 	//public
 	async selectByKey(payload) {
@@ -645,6 +665,12 @@ class IndexeddbCore {
 		const keyPathName = this.getKeyPathByMap();
 		return await this._insertUpdate(tableName, keyPathName, data, callback)
 			.catch(this.throwNewError("insertUpdate->_insertUpdate tableName:" + tableName));
+	}
+	//private
+	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
+		for (let recoord of data) {
+			await this._insertUpdate(tableName, keyPathName, record, callback);
+		}
 	}
 	//private
 	async _insertUpdate(tableName, keyPathName, data, callback) {
@@ -999,7 +1025,7 @@ class IndexeddbHelper {
 	async execCmd(cmd, data) {
 		// console.log("cmd:" + cmd + "/data:" + data);
 		if (cmdSelectAll === cmd) {
-			return await this.core._selectAll(data.tableName, data.range, data.direction);
+			return await this.core._selectAll(data.tableName, data.range, data.direction, data.offset, data.limmitCount);
 		}
 		if (cmdSelectByKey === cmd) {
 			return await this.core._selectByKey(data.tableName, data.key);
@@ -1031,8 +1057,15 @@ class IndexeddbHelper {
 	}
 
 	//Select In-line-Keyで返す。
-	async selectAll(tableName, range, direction) {
-		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction });
+	async selectAllForwardMatch(tableName, key, direction, offset, limmitCount) {
+		const nextKey = key.slice(0, -1) + String.fromCharCode(key.slice(-1)
+			.charCodeAt() + 1);
+		const range = IDBKeyRange.bound(str, nextStr, false, true);
+		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
+	};
+	//Select In-line-Keyで返す。
+	async selectAll(tableName, range, direction, offset, limmitCount) {
+		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
 	};
 	//Select In-line-return promise;Keyで返す。
 	async selectByKey(tableName, key) {

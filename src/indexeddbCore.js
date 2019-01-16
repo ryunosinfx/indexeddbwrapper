@@ -155,13 +155,13 @@ export class IndexeddbCore {
 		return await this._selectAll(tableName, range, condetions);
 	}
 	//Select In-line-Keyで返す。
-	async _selectAll(tableName, range, direction) {
+	async _selectAll(tableName, range, direction, offset, count, callback) {
 		const db = await this.getOpenDB()
 			.catch(this.throwNewError("_selectAll->getOpenDB tableName:" + tableName));
 		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
-		return await this._selectAllExecute(objectStore, range);
+		return await this._selectAllExecute(objectStore, range, false, offset, count, callback);
 	};
-	_selectAllExecute(objectStore, range, isGetFirstOne) {
+	_selectAllExecute(objectStore, range, isGetFirstOne, offset, count, callback) {
 		return new Promise((resolve, reject) => {
 			const list = [];
 			let req = range === undefined ?
@@ -170,8 +170,9 @@ export class IndexeddbCore {
 			req.onsuccess = (event) => {
 				let cursor = event.target.result;
 				if (cursor) {
+					const value = cursor.value;
 					// console.log(cursor.value)
-					list.push(cursor.value);
+					list.push(value);
 					if (isGetFirstOne) {
 						resolve(list[0]);
 						return;
@@ -279,6 +280,12 @@ export class IndexeddbCore {
 		const keyPathName = this.getKeyPathByMap();
 		return await this._insertUpdate(tableName, keyPathName, data, callback)
 			.catch(this.throwNewError("insertUpdate->_insertUpdate tableName:" + tableName));
+	}
+	//private
+	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
+		for(let recoord of data){
+			await this._insertUpdate(tableName, keyPathName, record, callback);
+		}
 	}
 	//private
 	async _insertUpdate(tableName, keyPathName, data, callback) {

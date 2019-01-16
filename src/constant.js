@@ -4,5 +4,5 @@ export default {
 	dbName: "IDBWrapper",
 	ua: ua,
 	domain: domain,
-	keypathName: "pk",
+	keypathName: "pk"
 }

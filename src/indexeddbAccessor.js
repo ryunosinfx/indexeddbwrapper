@@ -29,6 +29,15 @@ export class IndexeddbAccessor {
 				});
 		});
 	}
+	async putByMap(dataMap, callback) {
+		const record = {
+			data: data
+		};
+		record[this.keyPathName] = key;
+		//console.log("saveDataDefault 001:" + key + "/" + data);
+		await this.putRecord(record, undefined, callback);
+		//console.log("saveDataDefault 002:" + key + "/" + data);
+	}
 	async put(key, data, callback) {
 		const record = {
 			data: data

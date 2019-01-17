@@ -448,6 +448,33 @@ export class IndexeddbCore {
 		this.closeDB();
 		return names;
 	}
+	async createIndex(tableName, key) {
+		const db = await this.getOpenDB()
+			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
+		const names = db.objectStoreNames;
+		this.closeDB();
+		return names;
+	}
+	async _createIndex(db ,tableName, key) {
+		return new Promise((resolve, reject) => {
+			let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+			let request = objectStore.delete(key + "");
+			request.onsuccess = (event) => {
+				resolve({ tableName, key });
+			}
+			request.onerror = (e) => {
+				console.error(e);
+				reject(e);
+			};
+		});
+	}
+	async getObjectStoreNames() {
+		const db = await this.getOpenDB()
+			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
+		const names = db.objectStoreNames;
+		this.closeDB();
+		return names;
+	}
 	async isExistsObjectStore(tableName) {
 		const db = await this.getOpenDB()
 			.catch(this.throwNewError("isExistsObjectStore->getOpenDB tableName:" + tableName));
@@ -481,7 +508,7 @@ export class IndexeddbCore {
 				}
 			}
 			if (isExist === false) {
-				db.createObjectStore(tableName, { keyPath: keyPathName });
+				db.createObjectStore(tableName, { keyPath: keyPathName, autoIncrement: !!isAutoIncrement});
 			}
 			this.closeDB();
 		};

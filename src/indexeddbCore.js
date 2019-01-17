@@ -173,7 +173,6 @@ export class IndexeddbCore {
 				objectStore.openCursor(range);
 			req.onsuccess = (event) => {
 				let cursor = event.target.result;
-				let count = 0;
 				if (cursor) {
 					const value = cursor.value;
 					if (isValidCallBack && !callback(value)) {
@@ -255,6 +254,9 @@ export class IndexeddbCore {
 	}
 	async _selectByKeysOnTran(db, tableName, keys, tables) {
 		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
+		return await this._selectByKeysOnTranExec(objectStore, keys, tableName);
+	}
+	async _selectByKeysOnTranExec(objectStore, keys, tableName) {
 		const retMap = {};
 		for (let key of keys) {
 			const cache = this.getCache(tableName, key);
@@ -306,6 +308,74 @@ export class IndexeddbCore {
 			await this._insertUpdate(tableName, keyPathName, record, callback);
 		}
 	}
+	//----------------------------------------------------------------
+	//private
+	async _bulkInsertUpdate(tableName, keyPathName, data, callback) {
+		const dataList = [];
+		const keys = [];
+		for (let recoord of data) {
+			const key = recoord[keyPathName];
+			dataList.push({ key, data: record });
+			keys.push(key);
+		}
+		const db = await this.getOpenDB()
+			.catch(this.throwNewError("_insertUpdate->getOpenDB tableName:" + tableName));
+		const tables = IdbUtil.currentTables(tableName);
+		const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+		const dataMap = await this._selectByKeysOnTranExec(objectStore, keys, tableName);
+		await this._bulkUpdateExecute(objectStore, tableName, dataList, dataMap);
+		await this._bulkInsertExecute(objectStore, tableName, dataList, dataMap);
+		if (typeof callback === "function") {
+			callback();
+		}
+	}
+	_bulkInsertExecute(objectStore, tableName, dataList, dataMap) {
+		const promises = [];
+		for (const { key, data } of dataList) {
+			if (dataMap[key]) {
+				continue;
+			}
+			const promise = this._bulkInsertExecuteOne(objectStore, key, data);
+			promises.push(promise);
+		}
+		return Promise.all(promises);
+	}
+	_bulkInsertExecuteOne(objectStore, key, data) {
+		return new Promise((resolve, reject) => {
+			let objectStoreRequest = objectStore.add(data); //,keyPath
+			objectStoreRequest.onsuccess = (event) => {
+				resolve({ data, key });
+			};
+			objectStoreRequest.onerror = (e) => {
+				console.error(e);
+				reject(e);
+			};
+		});
+	}
+	_bulkUpdateExecute(objectStore, tableName, dataList, dataMap) {
+		const promises = [];
+		for (const { key, data } of dataList) {
+			if (!dataMap[key]) {
+				continue;
+			}
+			const promise = this._bulkUpdateExecuteOne(objectStore, key, data);
+			promises.push(promise);
+		}
+		return Promise.all(promises);
+	};
+	_bulkUpdateExecuteOne(objectStore, key, data) {
+		return new Promise((resolve, reject) => {
+			let objectStoreRequest = objectStore.put(data); //,keyPath
+			objectStoreRequest.onsuccess = (event) => {
+				resolve({ data, key });
+			};
+			objectStoreRequest.onerror = (e) => {
+				console.error(e);
+				reject(e);
+			};
+		});
+	}
+	//----------------------------------------------------------------
 	//private
 	async _insertUpdate(tableName, keyPathName, data, callback) {
 		const key = data[keyPathName];
@@ -448,33 +518,6 @@ export class IndexeddbCore {
 		this.closeDB();
 		return names;
 	}
-	async createIndex(tableName, key) {
-		const db = await this.getOpenDB()
-			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
-		const names = db.objectStoreNames;
-		this.closeDB();
-		return names;
-	}
-	async _createIndex(db ,tableName, key) {
-		return new Promise((resolve, reject) => {
-			let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-			let request = objectStore.delete(key + "");
-			request.onsuccess = (event) => {
-				resolve({ tableName, key });
-			}
-			request.onerror = (e) => {
-				console.error(e);
-				reject(e);
-			};
-		});
-	}
-	async getObjectStoreNames() {
-		const db = await this.getOpenDB()
-			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
-		const names = db.objectStoreNames;
-		this.closeDB();
-		return names;
-	}
 	async isExistsObjectStore(tableName) {
 		const db = await this.getOpenDB()
 			.catch(this.throwNewError("isExistsObjectStore->getOpenDB tableName:" + tableName));
@@ -508,7 +551,7 @@ export class IndexeddbCore {
 				}
 			}
 			if (isExist === false) {
-				db.createObjectStore(tableName, { keyPath: keyPathName, autoIncrement: !!isAutoIncrement});
+				db.createObjectStore(tableName, { keyPath: keyPathName });
 			}
 			this.closeDB();
 		};

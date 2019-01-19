@@ -2,7 +2,7 @@
 const path = require('path');
 const webpack = require("webpack");
 module.exports = {
-	mode: 'development',
+	// mode: 'development',
 	//  context: __dirname,
 	entry: {
 		bundle: './index.js'
@@ -16,6 +16,8 @@ module.exports = {
 		// 出力先のパス
 		path: __dirname + "/dest",
 		publicPath: "/dest/",
+		libraryTarget: 'var',
+		library: 'indexeddbwrapper',
 		globalObject: 'this'
 	},
 	module: {
@@ -28,6 +30,14 @@ module.exports = {
 			}]
 		}]
 	},
+	devServer: {
+		publicPath: "/",
+		contentBase: __dirname + "/",
+		watchContentBase: true,
+		// inline: true,
+		// host: '0.0.0.0',
+		port: 8083
+	},
 	plugins: [
 		new webpack.LoaderOptionsPlugin({
 			// test: /\.xxx$/,  may apply this only for some modules
@@ -36,7 +46,7 @@ module.exports = {
 			}
 		}, { debug: 'debug' }),
 		// new webpack.optimize.UglifyJsPlugin(),
-		new webpack.optimize.AggressiveMergingPlugin(),
+		new webpack.optimize.AggressiveMergingPlugin()
 	],
 	devtool: 'source-map',
 	resolve: {

@@ -1,3 +1,4 @@
+var indexeddbwrapper =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -95,10 +96,51 @@
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "indexedbwrapper", function() { return indexedbwrapper; });
+/* WEBPACK VAR INJECTION */(function(module) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "indexedbwrapper", function() { return indexedbwrapper; });
 /* harmony import */ var _src_indexeddbWrapper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./src/indexeddbWrapper */ "./src/indexeddbWrapper.js");
 
 const indexedbwrapper = _src_indexeddbWrapper__WEBPACK_IMPORTED_MODULE_0__["idbw"];
+module.exports = {
+	run: function() {
+		console.log('run from library');
+	}
+};
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./node_modules/webpack/buildin/harmony-module.js */ "./node_modules/webpack/buildin/harmony-module.js")(module)))
+
+/***/ }),
+
+/***/ "./node_modules/webpack/buildin/harmony-module.js":
+/*!*******************************************!*\
+  !*** (webpack)/buildin/harmony-module.js ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function(originalModule) {
+	if (!originalModule.webpackPolyfill) {
+		var module = Object.create(originalModule);
+		// module.parent = undefined by default
+		if (!module.children) module.children = [];
+		Object.defineProperty(module, "loaded", {
+			enumerable: true,
+			get: function() {
+				return module.l;
+			}
+		});
+		Object.defineProperty(module, "id", {
+			enumerable: true,
+			get: function() {
+				return module.i;
+			}
+		});
+		Object.defineProperty(module, "exports", {
+			enumerable: true
+		});
+		module.webpackPolyfill = 1;
+	}
+	return module;
+};
+
 
 /***/ }),
 
@@ -897,6 +939,26 @@ class IndexeddbCore {
 		this.closeDB();
 		return isExist;
 	}
+	async createIndex(tableName, key) {
+			const db = await this.getOpenDB()
+				.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
+			const names = db.objectStoreNames;
+			this.closeDB();
+			return names;
+		}
+		 _createIndex(db ,tableName, keyPath ,isMultiEntry) {
+				const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+				const indexName = tableName+'-'+keyPath;
+				return objectStore.createIndex(indexName, keyPath, {multiEntry:!!isMultiEntry});
+		}
+		async getIndexNames(tableName) {
+			const db = await this.getOpenDB()
+			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
+ 				const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+			const names = objectStore.indexNames;
+			this.closeDB();
+			return names;
+		}
 	//public
 	async createStore(payload) {
 		let { tableName, keyPathName, isAutoIncrement } = payload;
@@ -937,6 +999,7 @@ class IndexeddbCore {
 		return;
 	};
 }
+
 
 /***/ }),
 

@@ -7,11 +7,11 @@ export class idbw {
 		this.dbName = dbName;
 		// not use
 	}
-	async getObAccessor(obName, keypathName) {
+	async getObAccessor(obName, keyPathName) {
 		if (idbAccessors.has(obName)) {
 			return idbAccessors.get(obName);
 		}
-		const accessor = new IndexeddbAccessor(obName, keypathName, this.dbName);
+		const accessor = new IndexeddbAccessor(obName, keyPathName, this.dbName);
 		idbAccessors.set(obName, accessor);
 		await accessor.init();
 		return accessor;

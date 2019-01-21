@@ -531,26 +531,46 @@ export class IndexeddbCore {
 		this.closeDB();
 		return isExist;
 	}
-	async createIndex(tableName, key) {
-			const db = await this.getOpenDB()
-				.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
-			const names = db.objectStoreNames;
-			this.closeDB();
-			return names;
-		}
-		 _createIndex(db ,tableName, keyPath ,isMultiEntry) {
-				const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-				const indexName = tableName+'-'+keyPath;
-				return objectStore.createIndex(indexName, keyPath, {multiEntry:!!isMultiEntry});
-		}
-		async getIndexNames(tableName) {
-			const db = await this.getOpenDB()
+	async createIndex(tableName, keyPath, isMultiEntry) {
+		const db = await this.getOpenDB()
 			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
- 				const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-			const names = objectStore.indexNames;
-			this.closeDB();
-			return names;
+		const names = db.objectStoreNames;
+		this._createIndex(db, tableName, keyPath, isMultiEntry);
+		this.closeDB();
+		return names;
+	}
+	_createIndex(db, tableName, keyPath, isMultiEntry) {
+		const tables = IdbUtil.currentTables(tableName);
+		const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+		const indexName = tableName + '-' + keyPath;
+		return objectStore.createIndex(indexName, keyPath, { multiEntry: !!isMultiEntry });
+	}
+	async getIndexNames(tableName) {
+		const tables = IdbUtil.currentTables(tableName);
+		const db = await this.getOpenDB()
+			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
+		const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+		const names = objectStore.indexNames;
+		this.closeDB();
+		return names;
+	}
+	async deleteIndex(tableName) {
+		const db = await this.getOpenDB()
+			.catch(this.throwNewError("getObjectStoreNames->getOpenDB"));
+		const names = db.objectStoreNames;
+		this.closeDB();
+		return names;
+	}
+	_deleteIndex(db, tableName) {
+		const tables = IdbUtil.currentTables(tableName);
+		const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+		const indexName = tableName + '-' + keyPath;
+		const names = objectStore.indexNames;
+		if (names.includes(indexName)) {
+			return objectStore.deleteIndex(indexName);
 		}
+		return null
+	}
 	//public
 	async createStore(payload) {
 		let { tableName, keyPathName, isAutoIncrement } = payload;

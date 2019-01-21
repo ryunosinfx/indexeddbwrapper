@@ -6,6 +6,7 @@ const cmdSelectAll = "cmdSelectAll";
 const cmdSelectByKey = "cmdSelectByKey";
 const cmdSelectByKeys = "cmdSelectByKeys";
 const cmdSelectFirstOne = "cmdSelectFirstOne";
+const cmdBulkInsertUpdate = "cmdBulkInsertUpdate";
 const cmdInsertUpdate = "cmdInsertUpdate";
 const cmdDeleteWithRange = "cmdDeleteWithRange";
 const cmdDelete = "cmdDelete";
@@ -152,6 +153,9 @@ export class IndexeddbHelper {
 		if (cmdSelectFirstOne === cmd) {
 			return await this.core._selectFirstOne(data.tableName, data.range, data.direction);
 		}
+		if (cmdBulkInsertUpdate === cmd) {
+			return await this.core._bulkInsertUpdate(data.tableName, data.keyPathName, data.data, data.callback);
+		}
 		if (cmdInsertUpdate === cmd) {
 			return await this.core._insertUpdate(data.tableName, data.keyPathName, data.data, data.callback);
 		}
@@ -195,6 +199,11 @@ export class IndexeddbHelper {
 	async selectFirstOne(tableName, range, direction) {
 		return await this.enQueueReadTask(cmdSelectFirstOne, { tableName, range, direction });
 	};
+
+	//private
+	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
+		return await this.enQueueWriteTask(cmdBulkInsertUpdate, { tableName, keyPathName, data, callback });
+	}
 
 	//private
 	async insertUpdate(tableName, keyPathName, data, callback) {

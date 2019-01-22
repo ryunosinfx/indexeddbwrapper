@@ -12,6 +12,9 @@ const cmdDeleteWithRange = "cmdDeleteWithRange";
 const cmdDelete = "cmdDelete";
 const cmdTruncate = "cmdTruncate";
 const cmdCreateStore = "cmdCreateStore";
+const cmdDeleteStore = "cmdDeleteStore";
+const cmdCreateIndex = "cmdCreateIndex";
+const cmdDeleteIndex = "cmdDeleteIndex";
 const cmdGetObjectStoreNames = "cmdGetObjectStoreNames";
 export class IndexeddbHelper {
 	constructor(dbName) {
@@ -171,6 +174,15 @@ export class IndexeddbHelper {
 		if (cmdCreateStore === cmd) {
 			return await this.core._createStore(data.tableName, data.keyPathName, data.isAutoIncrement);
 		}
+		if (cmdDeleteStore === cmd) {
+			return await this.core._deleteStore(data.tableName);
+		}
+		if (cmdCreateIndex === cmd) {
+			return await this.core._createIndex(data.tableName, data.keyPathName, data.isMultiColumns);
+		}
+		if (cmdDeleteIndex === cmd) {
+			return await this.core._deleteIndex(data.tableName, data.indexName);
+		}
 		if (cmdGetObjectStoreNames === cmd) {
 			return await this.core.getObjectStoreNames();
 		}
@@ -224,6 +236,18 @@ export class IndexeddbHelper {
 	//truncate
 	async createStore(tableName, keyPathName, isAutoIncrement) {
 		return await this.enQueueWriteTask(cmdCreateStore, { tableName, keyPathName, isAutoIncrement });
+	};
+	//truncate
+	async deleteStore(tableName) {
+		return await this.enQueueWriteTask(cmdDeleteStore, { tableName });
+	};
+	//truncate
+	async creatIndex(tableName, keyPathName, isMultiColumns) {
+		return await this.enQueueWriteTask(cmdCreateIndex, { tableName, keyPathName, isMultiColumns });
+	};
+	//truncate
+	async deleteIndex(tableName,indexName) {
+		return await this.enQueueWriteTask(cmdDeleteIndex, { tableName, indexName });
 	};
 	async getObjectStoreNames() {
 		return await this.enQueueReadTask(cmdGetObjectStoreNames, {});

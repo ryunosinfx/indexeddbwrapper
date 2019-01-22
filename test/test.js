@@ -7,4 +7,11 @@ export class indexeddbWrapperTest {
 	execAll() {
 		alert("test!");
 	}
+	//test
+	//createDB
+	//creatTable
+	//bulkInsertUpdate
+	//select
+	//_updateExecute
+	//delete
 }

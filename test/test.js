@@ -18,4 +18,8 @@ export class indexeddbWrapperTest {
 	test1(){
 		this.db.getObAccessor('test','pk');
 	}
+	async test2(){
+		const ac =this.db.getObAccessor('test','pk');
+		
+	}
 }

@@ -10,7 +10,7 @@ export class TestUtil {
 		this.frame.appendChild(hr);
 		this.currentFrame = document.createElement('div');
 		this.frame.appendChild(this.currentFrame);
-		this.time= Date.now();
+		this.time = Date.now();
 	}
 	createNewFrame() {
 		const hr = document.createElement('hr');
@@ -25,24 +25,25 @@ export class TestUtil {
 		this.currentFrame.appendChild(title);
 		this.currentFrame.appendChild(hr);
 	}
-	log(level,time,msg) {
+	log(level, time, msg) {
 		const row = document.createElement('div');
-		row.textContent = time+' '+level+' '+msg;
+		row.textContent = time + ' ' + level + ' ' + msg;
 		this.currentFrame.appendChild(row);
 	}
-	getDuration(){
+	getDuration() {
 		const time = Date.now();
 		const duration = time - this.time;
 		this.time + time;
-		return time+'/'+("00000000000"+duration).substring(-10);
+		return time + '/' + ("00000000000" + duration)
+			.substring(-10);
 	}
 	info(msg) {
-		this.log("[INFO]",this.getDuration(),msg);
+		this.log("[INFO]", this.getDuration(), msg);
 	}
 	warn(msg) {
-		this.log("[WARN]",this.getDuration(),msg);
+		this.log("[WARN]", this.getDuration(), msg);
 	}
 	error(msg) {
-		this.log("[ERROR]",this.getDuration(),msg);
+		this.log("[ERROR]", this.getDuration(), msg);
 	}
 }

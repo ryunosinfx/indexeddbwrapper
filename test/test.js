@@ -3,7 +3,7 @@ import { TestUtil } from './testUtil'
 export class indexeddbWrapperTest {
 	constructor() {
 		this.db = new idbw("indexeddbWrapper-test");
-		this.logger= new TestUtil('idbw test!');
+		this.logger = new TestUtil('idbw test!');
 	}
 	execAll() {
 		alert("test!");
@@ -15,7 +15,7 @@ export class indexeddbWrapperTest {
 	//select
 	//_updateExecute
 	//delete
-	test1(){
-		this.db.getObAccessor('test','pk');
+	test1() {
+		const ac = this.db.getObAccessor('test', 'pk');
 	}
 }

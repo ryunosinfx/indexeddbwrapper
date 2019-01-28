@@ -18,4 +18,12 @@ export class indexeddbWrapperTest {
 	test1() {
 		const ac = this.db.getObAccessor('test', 'pk');
 	}
+<<<<<<< HEAD
 }
+=======
+	async test2(){
+		const ac =this.db.getObAccessor('test','pk');
+		
+	}
+}
+>>>>>>> 1befebcb45581a5c1342125717fab17d0b15200f

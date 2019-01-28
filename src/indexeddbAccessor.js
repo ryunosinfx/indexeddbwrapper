@@ -5,7 +5,7 @@ let dbName = constant.dbName;
 // stock par db
 const idbHelperMap = new Map();
 export class IndexeddbAccessor {
-	constructor(objectStoreName, keypathName = constant.keypathName, currentDbName = dbName) {
+	constructor(objectStoreName, keypathName = constant.keypathName, isAutoincrements=false,currentDbName = dbName) {
 		if (!idbHelperMap.has(currentDbName)) {
 			this.idbh = new IndexeddbHelper(currentDbName);
 			idbHelperMap.set(currentDbName, this.idbh);
@@ -14,13 +14,19 @@ export class IndexeddbAccessor {
 		}
 		this.keyPathName = keypathName;
 		this.objectStoreName = objectStoreName;
+		this.isAutoincrements = isAutoincrements;
 	}
 	static setDbName(dbNameNew) {
 		dbName = dbNameNew;
 	}
+	async static getInstance(objectStoreName, keypathNamee, isAutoincrements,currentDbName) {
+		const inst =  new IndexeddbAccessor(objectStoreName, keypathNamee, isAutoincrements,currentDbName);
+		await inst.init();
+		return inst;
+	}
 	init() {
 		return new Promise((reslve, reject) => {
-			this.idbh.createStore(this.objectStoreName, this.keyPathName)
+			this.idbh.createStore(this.objectStoreName, this.keyPathName,this.isAutoincrements)
 				.then(() => {
 					reslve(true)
 				}, (e) => {

@@ -1,38 +1,57 @@
 //↓↓↓↓追加
 const path = require('path');
-const webpack = require("webpack");
+const webpack = require('webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
 	// mode: 'development',
 	//  context: __dirname,
 	entry: {
-		bundle: './index.js'
+		bundle: './index.js',
+		test: ['./test/idbw.test.js']
 	},
 	// [
 	//   './src/main.js','./src/worker.js', './index.css'
 	// ],
 	output: {
 		// 出力するファイル名
-		filename: 'bundle.js',
+		filename: '[name].js',
 		// 出力先のパス
-		path: __dirname + "/dest",
-		publicPath: "/dest/",
+		path: __dirname + '/dest',
 		libraryTarget: 'var',
 		library: 'indexeddbwrapper',
-		globalObject: 'this'
+		globalObject: 'this',
+		publicPath: './'
 	},
 	module: {
-		rules: [{
-			test: /\.js$/,
-			exclude: /node_modules/,
-			enforce: 'pre',
-			use: [{
-				loader: 'eslint-loader'
-			}]
-		}]
+		rules: [
+			{
+				test: /\.js$/,
+				exclude: /node_modules/,
+				enforce: 'pre',
+				use: [
+					{
+						loader: 'eslint-loader'
+					}
+				]
+			},
+			{
+				test: /test\.js$/,
+				use: {
+					loader: 'mocha-loader',
+					options: {
+						// mocha.setup(option)に渡すオプションが書ける
+						// https://mochajs.org/#running-mocha-in-the-browser
+					}
+				},
+				exclude: /node_modules/
+			}
+		]
 	},
 	devServer: {
-		publicPath: "/",
-		contentBase: __dirname + "/",
+		publicPath: '/',
+		contentBase: __dirname + '/',
 		watchContentBase: true,
 		// inline: true,
 		// host: '0.0.0.0',
@@ -44,9 +63,25 @@ module.exports = {
 			options: {
 				html: './index.html'
 			}
-		}, { debug: 'debug' }),
-		// new webpack.optimize.UglifyJsPlugin(),
-		new webpack.optimize.AggressiveMergingPlugin()
+		}),
+		new CopyWebpackPlugin(
+			[
+				{
+					from: './wasm/*.wasm',
+					to: './'
+				}
+			],
+			{ debug: 'debug' }
+		),
+		//new webpack.optimize.UglifyJsPlugin(),
+		//new webpack.optimize.AggressiveMergingPlugin(),
+
+		new HtmlWebpackPlugin({
+			// http://localhost:8085/testmocha.html
+			filename: 'testmocha.html',
+			inject: 'body',
+			chunks: ['test']
+		})
 	],
 	devtool: 'source-map',
 	resolve: {

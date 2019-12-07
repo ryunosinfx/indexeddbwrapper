@@ -1,6 +1,6 @@
-import { IdbUtil } from './idbUtil';
-const MODE_R = 'readonly';
-const MODE_RW = 'readwrite';
+import { IdbUtil } from './IdbUtil';
+import { OnMmoryCacheManager } from './OnMmoryCacheManager';
+import { MODE_R, MODE_RW } from './IndexedddbModeConsts';
 export class IndexeddbCore {
 	constructor(dbName) {
 		this.IDBKeyRange = window.IDBKeyRange;
@@ -12,7 +12,7 @@ export class IndexeddbCore {
 		this.isUpdateOpen = false;
 		this.timer = null;
 		this.isDBClosed = true;
-		this.tableCache = {};
+		this.cacheManager = OnMmoryCacheManager.getInstance(dbName);
 	}
 
 	getOpenDB(newVersion) {
@@ -31,7 +31,7 @@ export class IndexeddbCore {
 				this.isUpdateOpen = false;
 			}
 			// TODO instance
-			let request = this.indexedDB.open(this.dbName, newVersion);
+			const request = this.indexedDB.open(this.dbName, newVersion);
 			request.onsuccess = event => {
 				this.db = event.target.result;
 				this.isDBClosed = false;
@@ -64,43 +64,11 @@ export class IndexeddbCore {
 			}, 1000);
 		}
 	}
-	cacheClear() {
-		const keys = [];
-		for (let tableName in this.tableCache) {
-			keys.push(tableName);
-		}
-		for (let tableName of keys) {
-			const tableCache = this.tableCache[tableName];
-			for (let index in tableCache) {
-				delete tableCache[index];
-			}
-		}
-	}
-	setCache(tableName, key, value) {
-		if (!value || !value.data) {
-			return;
-		}
-		const data = value.data;
-		for (let key in data) {
-			const elm = data[key];
-			if (elm && elm.byteLength) {
-				return;
-			}
-		}
-		if (!this.tableCache[tableName]) {
-			this.tableCache[tableName] = {};
-		}
-		this.tableCache[tableName][key] = value;
-	}
-	getCache(tableName, key) {
-		const tableCache = this.tableCache[tableName];
-		return tableCache ? tableCache[key] : null;
-	}
 	getObjectStore(db, tableName, tables, mode) {
 		if (mode === MODE_R) {
-			this.cacheClear();
+			this.cacheManager.cacheClear();
 		}
-		let transaction = db.transaction(tables, mode);
+		const transaction = db.transaction(tables, mode);
 		transaction.oncomplete = event => {
 			this.closeDB();
 		};
@@ -126,33 +94,33 @@ export class IndexeddbCore {
 		return this.keyPathMap[tableName];
 	}
 	async getKeyPath(tableName) {
-		let keyPathName = this.keyPathMap[tableName];
+		const keyPathName = this.keyPathMap[tableName];
 		if (keyPathName !== undefined && keyPathName !== null) {
 			return keyPathName;
 		}
 		const db = await this.getOpenDB().catch(this.throwNewError('getKeyPath->getOpenDB'));
-		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
+		const objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
 		this.closeDB();
-		let keyPathNameCurrent = objectStore.keyPath;
+		const keyPathNameCurrent = objectStore.keyPath;
 		this.keyPathMap[tableName] = keyPathNameCurrent;
 		return keyPathNameCurrent;
 	}
 	//private
 	async getCurrentVersion() {
-		let db = await this.getOpenDB().catch(this.throwNewError('getCurrentVersion->getOpenDB'));
+		const db = await this.getOpenDB().catch(this.throwNewError('getCurrentVersion->getOpenDB'));
 		const version = db.version;
 		this.closeDB();
 		return version;
 	}
 	//public
 	async selectAll(payload) {
-		let { tableName, range, condetions } = payload;
+		const { tableName, range, condetions } = payload;
 		return await this._selectAll(tableName, range, condetions);
 	}
 	//Select In-line-Keyで返す。
 	async _selectAll(tableName, range, direction, offset, count, callback) {
 		const db = await this.getOpenDB().catch(this.throwNewError('_selectAll->getOpenDB tableName:' + tableName));
-		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
+		const objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
 		return await this._selectAllExecute(objectStore, range, false, offset, count, callback);
 	}
 	_selectAllExecute(objectStore, range, isGetFirstOne, offset, count, callback) {
@@ -162,9 +130,9 @@ export class IndexeddbCore {
 			const endCount = offset + count;
 			const list = [];
 			let rowCount = 0;
-			let req = range === undefined ? objectStore.openCursor() : objectStore.openCursor(range);
+			const req = range === undefined ? objectStore.openCursor() : objectStore.openCursor(range);
 			req.onsuccess = event => {
-				let cursor = event.target.result;
+				const cursor = event.target.result;
 				if (cursor) {
 					const value = cursor.value;
 					if (isValidCallBack && !callback(value)) {
@@ -200,7 +168,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async selectByKey(payload) {
-		let { tableName, key } = payload;
+		const { tableName, key } = payload;
 		return await this._selectByKey(tableName, key);
 	}
 	//Select In-line-return promise;Keyで返す。
@@ -213,16 +181,16 @@ export class IndexeddbCore {
 	_selectByKeyOnTran(db, tableName, key, tables, mode = MODE_R) {
 		return new Promise((resolve, reject) => {
 			const cachekey = tableName + '_' + mode;
-			const cache = this.getCache(cachekey, key);
+			const cache = this.cacheManager.getCache(cachekey, key);
 			if (cache) {
 				resolve(cache);
 			} else {
-				let objectStore = this.getObjectStore(db, tableName, [tableName], mode);
-				let request = objectStore.get(key); //keyはsonomama
+				const objectStore = this.getObjectStore(db, tableName, [tableName], mode);
+				const request = objectStore.get(key); //keyはsonomama
 				request.onsuccess = event => {
 					const result = request.result;
 					resolve(result);
-					this.setCache(cachekey, key, result);
+					this.cacheManager.setCache(cachekey, key, result);
 				};
 				request.onerror = e => {
 					reject(e);
@@ -232,7 +200,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async selectByKeys(payload) {
-		let { tableName, keys } = payload;
+		const { tableName, keys } = payload;
 		return await this._selectByKeys(tableName, keys);
 	}
 	//Select In-line-return promise;Keyで返す。
@@ -241,16 +209,16 @@ export class IndexeddbCore {
 		return await this._selectByKeysOnTran(db, tableName, keys).catch(this.throwNewError('_selectByKeys->_selectByKeyOnTran tableName:' + tableName));
 	}
 	async _selectByKeysOnTran(db, tableName, keys, tables) {
-		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
+		const objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
 		return await this._selectByKeysOnTranExec(objectStore, keys, tableName);
 	}
 	async _selectByKeysOnTranExec(objectStore, keys, tableName) {
 		const retMap = {};
 		for (let key of keys) {
-			const cache = this.getCache(tableName, key);
+			const cache = this.cacheManager.getCache(tableName, key);
 			const result = cache ? cache : await this._getByKeyFromeObjectStore(objectStore, key);
 			if (!cache) {
-				this.setCache(tableName, key, result);
+				this.cacheManager.setCache(tableName, key, result);
 			}
 			retMap[key] = result;
 		}
@@ -261,7 +229,7 @@ export class IndexeddbCore {
 			if (!key) {
 				resolve(null);
 			}
-			let request = objectStore.get(key); //keyはsonomama
+			const request = objectStore.get(key); //keyはsonomama
 			request.onsuccess = event => {
 				resolve(request.result);
 			};
@@ -272,25 +240,25 @@ export class IndexeddbCore {
 	}
 	//public
 	async selectFirstOne(payload) {
-		let { tableName, range, direction } = payload;
+		const { tableName, range, direction } = payload;
 		return await this._selectFirstOne(tableName, range, direction);
 	}
 	//Select FirstOnek
 	async _selectFirstOne(tableName, range, direction) {
 		const db = await this.getOpenDB().catch(this.throwNewError('_selectFirstOne->getOpenDB tableName:' + tableName));
-		let objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
+		const objectStore = this.getObjectStore(db, tableName, [tableName], MODE_R);
 		return await this._selectAllExecute(objectStore, range, true);
 	}
 
 	//InsertUpdate
 	async insertUpdate(payload) {
-		let { tableName, data, callback } = payload;
+		const { tableName, data, callback } = payload;
 		const keyPathName = this.getKeyPathByMap();
 		return await this._insertUpdate(tableName, keyPathName, data, callback).catch(this.throwNewError('insertUpdate->_insertUpdate tableName:' + tableName));
 	}
 	//private
 	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
-		for (let recoord of data) {
+		for (let record of data) {
 			await this._insertUpdate(tableName, keyPathName, record, callback);
 		}
 	}
@@ -327,7 +295,7 @@ export class IndexeddbCore {
 	}
 	_bulkInsertExecuteOne(objectStore, key, data) {
 		return new Promise((resolve, reject) => {
-			let objectStoreRequest = objectStore.add(data); //,keyPath
+			const objectStoreRequest = objectStore.add(data); //,keyPath
 			objectStoreRequest.onsuccess = event => {
 				resolve({ data, key });
 			};
@@ -350,7 +318,7 @@ export class IndexeddbCore {
 	}
 	_bulkUpdateExecuteOne(objectStore, key, data) {
 		return new Promise((resolve, reject) => {
-			let objectStoreRequest = objectStore.put(data); //,keyPath
+			const objectStoreRequest = objectStore.put(data); //,keyPath
 			objectStoreRequest.onsuccess = event => {
 				resolve({ data, key });
 			};
@@ -370,16 +338,23 @@ export class IndexeddbCore {
 		if (callback) {
 			callback(value, data);
 		}
+		let result = null;
+		// console.log(value);
 		if (value === undefined) {
-			return await this._insertExecute(db, tableName, key, data, tables).catch(this.throwNewError('_insertUpdate->_insertExecute tableName:' + tableName));
+			result = await this._insertExecute(db, tableName, key, data, tables).catch(this.throwNewError('_insertUpdate->_insertExecute tableName:' + tableName));
 		} else {
-			return await this._updateExecute(db, tableName, key, data, tables).catch(this.throwNewError('_insertUpdate->_updateExecute tableName:' + tableName));
+			result = await this._updateExecute(db, tableName, key, data, tables).catch(this.throwNewError('_insertUpdate->_updateExecute tableName:' + tableName));
 		}
+		this.cacheManager.updateCache(tableName, key, result.data);
+		// const value2 = await this._selectByKeyOnTran(db, tableName, key, tables, MODE_RW);
+		// console.log(result);
+		// console.log(value2);
+		return result;
 	}
 	_insertExecute(db, tableName, key, data, tables) {
-		let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+		const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
 		return new Promise((resolve, reject) => {
-			let objectStoreRequest = objectStore.add(data); //,keyPath
+			const objectStoreRequest = objectStore.add(data); //,keyPath
 			objectStoreRequest.onsuccess = event => {
 				resolve({ data, key });
 			};
@@ -391,8 +366,8 @@ export class IndexeddbCore {
 	}
 	_updateExecute(db, tableName, key, data, tables) {
 		return new Promise((resolve, reject) => {
-			let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-			let request = objectStore.put(data); //,keyPathValue
+			const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+			const request = objectStore.put(data); //,keyPathValue
 			request.onsuccess = event => {
 				resolve({ data, key });
 			};
@@ -404,7 +379,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async deleteWithRange(payload) {
-		let { tableName, range, condetions } = payload;
+		const { tableName, range, condetions } = payload;
 		return await this._deleteWithRange(tableName, range, condetions);
 	}
 	//Delete
@@ -415,16 +390,18 @@ export class IndexeddbCore {
 	}
 	_deleteWithRangeExecute(db, tableName, range, condetions, tables) {
 		return new Promise((resolve, reject) => {
-			let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-			let request = objectStore.openCursor(range);
+			const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+			const request = objectStore.openCursor(range);
 			request.onsuccess = event => {
-				let cursor = event.target.result;
-				let list = [];
+				const cursor = event.target.result;
+				const list = [];
 				if (cursor) {
-					let value = cursor.value;
+					const value = cursor.value;
 					if (IdbUtil.isMutch(value, condetions)) {
-						let or = objectStore.delete(cursor.key);
+						const key = cursor.key;
+						const or = objectStore.delete(key);
 						or.onsuccess = event => {
+							this.cacheManager.removeCache(tableName, key);
 							list.push(value);
 						};
 						or.onerror = e => {
@@ -443,7 +420,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async delete(payload) {
-		let { tableName, key } = payload;
+		const { tableName, key } = payload;
 		return await this._delete(tableName, key);
 	}
 	//Delete
@@ -454,9 +431,10 @@ export class IndexeddbCore {
 	}
 	_deleteOnTran(db, tableName, key, tables) {
 		return new Promise((resolve, reject) => {
-			let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-			let request = objectStore.delete(key + '');
+			const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+			const request = objectStore.delete(key + '');
 			request.onsuccess = event => {
+				this.cacheManager.removeCache(tableName, key);
 				resolve({ tableName, key });
 			};
 			request.onerror = e => {
@@ -467,7 +445,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async truncate(payload) {
-		let { tableName } = payload;
+		const { tableName } = payload;
 		return await this._truncate(tableName);
 	}
 	//truncate
@@ -479,9 +457,10 @@ export class IndexeddbCore {
 	//truncate
 	_truncateExecute(db, tableName, tables) {
 		return new Promise((resolve, reject) => {
-			let objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
-			let request = objectStore.clear();
+			const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
+			const request = objectStore.clear();
 			request.onsuccess = event => {
+				this.cacheManager.trancateCache(tableName);
 				resolve();
 			};
 			request.onerror = e => {
@@ -546,7 +525,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async createStore(payload) {
-		let { tableName, keyPathName, isAutoIncrement } = payload;
+		const { tableName, keyPathName, isAutoIncrement } = payload;
 		return await this._createStore(tableName, keyPathName, isAutoIncrement);
 	}
 	//createStore
@@ -570,7 +549,7 @@ export class IndexeddbCore {
 	}
 	//public
 	async dropStore(payload) {
-		let { tableName } = payload;
+		const { tableName } = payload;
 		return await this._dropStore(tableName);
 	}
 	//DropStore
@@ -578,6 +557,7 @@ export class IndexeddbCore {
 		const newVersion = (await this.getCurrentVersion()) + 1;
 		const db = await this.getOpenDB(newVersion).catch(this.throwNewError('_dropStore->getOpenDB tableName:' + tableName));
 		db.deleteObjectStore(tableName);
+		this.cacheManager.trancateCache(tableName);
 		this.closeDB();
 		return;
 	}

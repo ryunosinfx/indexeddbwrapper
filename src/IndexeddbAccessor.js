@@ -1,5 +1,5 @@
 import constant from './constant';
-import { IndexeddbHelper } from './indexeddbHelper';
+import { IndexeddbHelper } from './IndexeddbHelper';
 const initQueue = [];
 let dbName = constant.dbName;
 // stock par db
@@ -68,7 +68,7 @@ export class IndexeddbAccessor {
 		}
 		//console.log("saveData 003:" + key + "/" + dataObj +"/this.objectStoreName:"+this.objectStoreName);
 		const value = await this.idbh.insertUpdate(this.objectStoreName, this.keyPathName, storeData, callback);
-		//console.log("saveData 004:" + key + "/" + dataObj+"/"+JSON.stringify(value)+"/"+value.data.data);
+		// console.log('saveData 004:' + key + '/' + dataObj + '/' + JSON.stringify(value) + '/' + value.data.data);
 		return value;
 	}
 	async getAsMap(keys) {

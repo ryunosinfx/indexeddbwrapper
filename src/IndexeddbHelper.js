@@ -1,5 +1,4 @@
-import { IdbUtil } from './idbUtil';
-import { IndexeddbCore } from './indexeddbCore';
+import { IndexeddbCore } from './IndexeddbCore';
 const MODE_R = 'readonly';
 const MODE_RW = 'readwrite';
 const cmdSelectAll = 'cmdSelectAll';

@@ -1,5 +1,8 @@
+import chai from 'chai';
 import { idbw } from '../src/indexeddbWrapper';
 import { TestUtil } from './testUtil';
+
+const expect = chai.expect;
 export class indexeddbWrapperTest {
 	constructor() {
 		this.db = new idbw('indexeddbWrapper-test');
@@ -15,10 +18,8 @@ export class indexeddbWrapperTest {
 	//select
 	//_updateExecute
 	//delete
-	test1() {
-		const ac = this.db.getObAccessor('test', 'pk');
+	async test1() {
+		const ac = await this.db.getObAccessor('test', 'pk');
 	}
-	async test2() {
-		const ac = this.db.getObAccessor('test', 'pk');
-	}
+	async test2() {}
 }

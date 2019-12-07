@@ -1,4 +1,4 @@
-import { IndexeddbAccessor } from './indexeddbAccessor';
+import { IndexeddbAccessor } from './IndexeddbAccessor';
 import constant from './constant';
 const idbAccessors = new Map();
 let currentDbName = constant.dbName;
@@ -7,7 +7,7 @@ export class idbw {
 		this.dbName = dbName;
 		// not use
 	}
-	async getObAccessor(obName, keyPathName) {
+	async getObAccessor(obName, keyPathName = 'pk') {
 		if (idbAccessors.has(obName)) {
 			return idbAccessors.get(obName);
 		}

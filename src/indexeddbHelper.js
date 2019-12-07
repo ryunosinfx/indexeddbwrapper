@@ -1,28 +1,27 @@
-import { IdbUtil } from './idbUtil'
-import { IndexeddbCore } from './indexeddbCore'
-const MODE_R = "readonly";
-const MODE_RW = "readwrite";
-const cmdSelectAll = "cmdSelectAll";
-const cmdSelectByKey = "cmdSelectByKey";
-const cmdSelectByKeys = "cmdSelectByKeys";
-const cmdSelectFirstOne = "cmdSelectFirstOne";
-const cmdBulkInsertUpdate = "cmdBulkInsertUpdate";
-const cmdInsertUpdate = "cmdInsertUpdate";
-const cmdDeleteWithRange = "cmdDeleteWithRange";
-const cmdDelete = "cmdDelete";
-const cmdTruncate = "cmdTruncate";
-const cmdCreateStore = "cmdCreateStore";
-const cmdDeleteStore = "cmdDeleteStore";
-const cmdCreateIndex = "cmdCreateIndex";
-const cmdDeleteIndex = "cmdDeleteIndex";
-const cmdGetObjectStoreNames = "cmdGetObjectStoreNames";
+import { IdbUtil } from './idbUtil';
+import { IndexeddbCore } from './indexeddbCore';
+const MODE_R = 'readonly';
+const MODE_RW = 'readwrite';
+const cmdSelectAll = 'cmdSelectAll';
+const cmdSelectByKey = 'cmdSelectByKey';
+const cmdSelectByKeys = 'cmdSelectByKeys';
+const cmdSelectFirstOne = 'cmdSelectFirstOne';
+const cmdBulkInsertUpdate = 'cmdBulkInsertUpdate';
+const cmdInsertUpdate = 'cmdInsertUpdate';
+const cmdDeleteWithRange = 'cmdDeleteWithRange';
+const cmdDelete = 'cmdDelete';
+const cmdTruncate = 'cmdTruncate';
+const cmdCreateStore = 'cmdCreateStore';
+const cmdDeleteStore = 'cmdDeleteStore';
+const cmdCreateIndex = 'cmdCreateIndex';
+const cmdDeleteIndex = 'cmdDeleteIndex';
+const cmdGetObjectStoreNames = 'cmdGetObjectStoreNames';
 export class IndexeddbHelper {
 	constructor(dbName) {
 		this.core = new IndexeddbCore(dbName);
 		this.queue = [];
 		this.lastTaskMode = null;
-		this.lastLockTime = new Date()
-			.getTime();
+		this.lastLockTime = new Date().getTime();
 		this.counter = 0;
 	}
 
@@ -32,7 +31,9 @@ export class IndexeddbHelper {
 			this.counter++;
 			if (this.counter > 1) {
 				this.counter--;
-				setTimeout(async () => { await this.deQueue() }, 0);
+				setTimeout(async () => {
+					await this.deQueue();
+				}, 0);
 			} else {
 				await this.deQueueExec();
 				// console.log("deQueue2:this.queue.length:" + this.queue.length);
@@ -47,71 +48,67 @@ export class IndexeddbHelper {
 		}
 	}
 	deQueueExec() {
-		return new Promise(
-			(resolve, reject) => {
+		return new Promise((resolve, reject) => {
+			while (this.queue.length > 0) {
+				// console.log("deQueueExec:1" + "this.counter:" + this.counter);
+				const promises = [];
+				const selectTasks = [];
 				while (this.queue.length > 0) {
-					// console.log("deQueueExec:1" + "this.counter:" + this.counter);
-					const promises = [];
-					const selectTasks = [];
-					while (this.queue.length > 0) {
-						// console.log("deQueueExec:2" + "this.counter:" + this.counter);
-						const task = this.queue.shift();
-						if (task) {
-							if (this.lastTaskMode !== task.mode || task.mode === MODE_RW) {
-								//ここでそのまま発行、そして終わるまで待機
-								if (promises.length > 0) {
-									Promise.all(promises)
-										.then(
-											(results) => {
-												for (let index in results) {
-													const taskOfRead = selectTasks[index];
-													const result = results[index];
-													taskOfRead.resolve(result);
-												}
-												promises.splice(0, promises.length);
-												this.executUpdateTask(task, resolve);
-											},
-											(error) => {
-												alert(error);
-												reject(error);
-											}
-										);
-								} else {
-									this.executUpdateTask(task, resolve);
-								}
-								return;
-							} else {
-								//じゃんじゃん流していこう。
-								const promise = this.execCmd(task.cmd, task.data);
-								promises.push(promise);
-								selectTasks.push(task);
-							}
-							this.lastTaskMode = task.mode;
-						} else {
-							//なんだっけ
-						}
-					}
-					if (promises.length > 0) {
-						Promise.all(promises)
-							.then(
-								(results) => {
-									for (let index in results) {
-										const taskOfRead = selectTasks[index];
-										const result = results[index];
-										taskOfRead.resolve(result);
+					// console.log("deQueueExec:2" + "this.counter:" + this.counter);
+					const task = this.queue.shift();
+					if (task) {
+						if (this.lastTaskMode !== task.mode || task.mode === MODE_RW) {
+							//ここでそのまま発行、そして終わるまで待機
+							if (promises.length > 0) {
+								Promise.all(promises).then(
+									results => {
+										for (let index in results) {
+											const taskOfRead = selectTasks[index];
+											const result = results[index];
+											taskOfRead.resolve(result);
+										}
+										promises.splice(0, promises.length);
+										this.executUpdateTask(task, resolve);
+									},
+									error => {
+										alert(error);
+										reject(error);
 									}
-									promises.splice(0, promises.length);
-									resolve();
-								},
-								(error) => {
-									alert(error);
-									reject(error);
-								}
-							);
+								);
+							} else {
+								this.executUpdateTask(task, resolve);
+							}
+							return;
+						} else {
+							//じゃんじゃん流していこう。
+							const promise = this.execCmd(task.cmd, task.data);
+							promises.push(promise);
+							selectTasks.push(task);
+						}
+						this.lastTaskMode = task.mode;
+					} else {
+						//なんだっけ
 					}
 				}
+				if (promises.length > 0) {
+					Promise.all(promises).then(
+						results => {
+							for (let index in results) {
+								const taskOfRead = selectTasks[index];
+								const result = results[index];
+								taskOfRead.resolve(result);
+							}
+							promises.splice(0, promises.length);
+							resolve();
+						},
+						error => {
+							alert(error);
+							reject(error);
+						}
+					);
+				}
 			}
-		);
+		});
 	}
 	executSelectPromiseAndTask(task, resolve, updateTask) {
 		if (updateTask) {
@@ -120,7 +117,7 @@ export class IndexeddbHelper {
 	}
 	executUpdateTask(task, resolve) {
 		const promise = this.execCmd(task.cmd, task.data);
-		promise.then((data) => {
+		promise.then(data => {
 			task.resolve(data);
 			resolve(data);
 		});
@@ -190,15 +187,14 @@ export class IndexeddbHelper {
 
 	//Select In-line-Keyで返す。
 	async selectAllForwardMatch(tableName, key, direction, offset, limmitCount) {
-		const nextKey = key.slice(0, -1) + String.fromCharCode(key.slice(-1)
-			.charCodeAt() + 1);
+		const nextKey = key.slice(0, -1) + String.fromCharCode(key.slice(-1).charCodeAt() + 1);
 		const range = IDBKeyRange.bound(str, nextStr, false, true);
 		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
-	};
+	}
 	//Select In-line-Keyで返す。
 	async selectAll(tableName, range, direction, offset, limmitCount) {
 		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
-	};
+	}
 	//Select In-line-return promise;Keyで返す。
 	async selectByKey(tableName, key) {
 		return await this.enQueueReadTask(cmdSelectByKey, { tableName, key });
@@ -210,7 +206,7 @@ export class IndexeddbHelper {
 	//Select FirstOnek
 	async selectFirstOne(tableName, range, direction) {
 		return await this.enQueueReadTask(cmdSelectFirstOne, { tableName, range, direction });
-	};
+	}
 
 	//private
 	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
@@ -224,31 +220,31 @@ export class IndexeddbHelper {
 	//Delete
 	async deleteWithRange(tableName, range, condetions) {
 		return await this.enQueueWriteTask(cmdDeleteWithRange, { tableName, range, direction });
-	};
+	}
 	//Delete
 	async delete(tableName, keyPathValue) {
 		return await this.enQueueWriteTask(cmdDelete, { tableName, keyPathValue });
-	};
+	}
 	//truncate
 	async truncate(tableName) {
 		return await this.enQueueWriteTask(cmdTruncate, { tableName });
-	};
+	}
 	//truncate
 	async createStore(tableName, keyPathName, isAutoIncrement) {
 		return await this.enQueueWriteTask(cmdCreateStore, { tableName, keyPathName, isAutoIncrement });
-	};
+	}
 	//truncate
 	async deleteStore(tableName) {
 		return await this.enQueueWriteTask(cmdDeleteStore, { tableName });
-	};
+	}
 	//truncate
 	async creatIndex(tableName, keyPathName, isMultiColumns) {
 		return await this.enQueueWriteTask(cmdCreateIndex, { tableName, keyPathName, isMultiColumns });
-	};
+	}
 	//truncate
-	async deleteIndex(tableName,indexName) {
+	async deleteIndex(tableName, indexName) {
 		return await this.enQueueWriteTask(cmdDeleteIndex, { tableName, indexName });
-	};
+	}
 	async getObjectStoreNames() {
 		return await this.enQueueReadTask(cmdGetObjectStoreNames, {});
 	}

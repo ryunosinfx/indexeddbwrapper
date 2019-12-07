@@ -1,5 +1,5 @@
-import { IndexeddbAccessor } from './indexeddbAccessor'
-import constant from './constant'
+import { IndexeddbAccessor } from './indexeddbAccessor';
+import constant from './constant';
 const idbAccessors = new Map();
 let currentDbName = constant.dbName;
 export class idbw {
@@ -16,4 +16,4 @@ export class idbw {
 		await accessor.init();
 		return accessor;
 	}
-};
+}

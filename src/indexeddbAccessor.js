@@ -1,11 +1,11 @@
-import constant from './constant'
-import { IndexeddbHelper } from './indexeddbHelper'
+import constant from './constant';
+import { IndexeddbHelper } from './indexeddbHelper';
 const initQueue = [];
 let dbName = constant.dbName;
 // stock par db
 const idbHelperMap = new Map();
 export class IndexeddbAccessor {
-	constructor(objectStoreName, keypathName = constant.keypathName, isAutoincrements=false,currentDbName = dbName) {
+	constructor(objectStoreName, keypathName = constant.keypathName, isAutoincrements = false, currentDbName = dbName) {
 		if (!idbHelperMap.has(currentDbName)) {
 			this.idbh = new IndexeddbHelper(currentDbName);
 			idbHelperMap.set(currentDbName, this.idbh);
@@ -19,20 +19,22 @@ export class IndexeddbAccessor {
 	static setDbName(dbNameNew) {
 		dbName = dbNameNew;
 	}
-	async static getInstance(objectStoreName, keypathNamee, isAutoincrements,currentDbName) {
-		const inst =  new IndexeddbAccessor(objectStoreName, keypathNamee, isAutoincrements,currentDbName);
+	static async getInstance(objectStoreName, keypathNamee, isAutoincrements, currentDbName) {
+		const inst = new IndexeddbAccessor(objectStoreName, keypathNamee, isAutoincrements, currentDbName);
 		await inst.init();
 		return inst;
 	}
 	init() {
 		return new Promise((reslve, reject) => {
-			this.idbh.createStore(this.objectStoreName, this.keyPathName,this.isAutoincrements)
-				.then(() => {
-					reslve(true)
-				}, (e) => {
+			this.idbh.createStore(this.objectStoreName, this.keyPathName, this.isAutoincrements).then(
+				() => {
+					reslve(true);
+				},
+				e => {
 					reject(e);
 					throw e;
-				});
+				}
+			);
 		});
 	}
 	async putByMap(dataMap, callback) {
@@ -62,7 +64,8 @@ export class IndexeddbAccessor {
 				data: record
 			};
 			storeData[this.keyPathName] = key;
-		} else if (key !== undefined) {}
+		} else if (key !== undefined) {
+		}
 		//console.log("saveData 003:" + key + "/" + dataObj +"/this.objectStoreName:"+this.objectStoreName);
 		const value = await this.idbh.insertUpdate(this.objectStoreName, this.keyPathName, storeData, callback);
 		//console.log("saveData 004:" + key + "/" + dataObj+"/"+JSON.stringify(value)+"/"+value.data.data);
@@ -84,9 +87,7 @@ export class IndexeddbAccessor {
 	}
 	async get(key) {
 		const recordAsDefaultLoad = await this.getRecord(key);
-		return recordAsDefaultLoad === undefined || recordAsDefaultLoad === null ?
-			null :
-			recordAsDefaultLoad.data;
+		return recordAsDefaultLoad === undefined || recordAsDefaultLoad === null ? null : recordAsDefaultLoad.data;
 	}
 	async getAll() {
 		return await this.idbh.selectAll(this.objectStoreName);

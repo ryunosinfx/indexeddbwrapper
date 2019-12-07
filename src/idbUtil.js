@@ -42,65 +42,67 @@ export class IdbUtil {
 			}
 			return true;
 		}
-	};
+	}
 	static makeKeyRange(start, end, isNotEqualStart, isNotEqualEnd) {
-		return (isNotEqualStart === undefined && isNotEqualEnd === undefined) ?
-			IDBKeyRange.bound(start, end, false, false) :
-			IDBKeyRange.bound(start, end, isNotEqualStart, isNotEqualEnd);
+		return isNotEqualStart === undefined && isNotEqualEnd === undefined ? IDBKeyRange.bound(start, end, false, false) : IDBKeyRange.bound(start, end, isNotEqualStart, isNotEqualEnd);
 	}
 	static makeKeyRangeUpper(start, isNotEqualStart) {
-		return (isNotEqualStart !== true) ?
-			IDBKeyRange.upperBound(start) :
-			IDBKeyRange.upperBound(start, isNotEqualStart);
+		return isNotEqualStart !== true ? IDBKeyRange.upperBound(start) : IDBKeyRange.upperBound(start, isNotEqualStart);
 	}
 	static makeKeyRangeLower(end, isNotEqualEnd) {
-		return (isNotEqualStart !== true) ?
-			KeyRange.lowerBound(end) :
-			IDBKeyRange.lowerBound(end, isNotEqualEnd);
+		return isNotEqualStart !== true ? KeyRange.lowerBound(end) : IDBKeyRange.lowerBound(end, isNotEqualEnd);
 	}
 	static makeKeyRangeOnly(only) {
-		return (isNotEqualStart !== true) ?
-			IDBKeyRange.only(only) :
-			IDBKeyRange.lowerBound(end, isNotEqualEnd);
+		return isNotEqualStart !== true ? IDBKeyRange.only(only) : IDBKeyRange.lowerBound(end, isNotEqualEnd);
 	}
 	//IDを生成
 	static buildKeyPath(key1, key2, key3, key4, key5) {
 		let array = [];
 		if (key1 !== undefined) {
-			array.push((key1 + "")
-				.split("&")
-				.join("&amp;")
-				.split(".")
-				.join("&#046;"));
+			array.push(
+				(key1 + '')
+					.split('&')
+					.join('&amp;')
+					.split('.')
+					.join('&#046;')
+			);
 		}
 		if (key2 !== undefined) {
-			array.push((key2 + "")
-				.split("&")
-				.join("&amp;")
-				.split(".")
-				.join("&#046;"));
+			array.push(
+				(key2 + '')
+					.split('&')
+					.join('&amp;')
+					.split('.')
+					.join('&#046;')
+			);
 		}
 		if (key3 !== undefined) {
-			array.push((key3 + "")
-				.split("&")
-				.join("&amp;")
-				.split(".")
-				.join("&#046;"));
+			array.push(
+				(key3 + '')
+					.split('&')
+					.join('&amp;')
+					.split('.')
+					.join('&#046;')
+			);
 		}
 		if (key4 !== undefined) {
-			array.push((key4 + "")
-				.split("&")
-				.join("&amp;")
-				.split(".")
-				.join("&#046;"));
+			array.push(
+				(key4 + '')
+					.split('&')
+					.join('&amp;')
+					.split('.')
+					.join('&#046;')
+			);
 		}
 		if (key5 !== undefined) {
-			array.push((key5 + "")
-				.split("&")
-				.join("&amp;")
-				.split(".")
-				.join("&#046;"));
+			array.push(
+				(key5 + '')
+					.split('&')
+					.join('&amp;')
+					.split('.')
+					.join('&#046;')
+			);
 		}
-		return array.join("");
-	};
+		return array.join('');
+	}
 }

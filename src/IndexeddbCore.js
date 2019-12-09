@@ -1,5 +1,4 @@
 import { IdbUtil } from './IdbUtil';
-import { OnMmoryCacheManager } from './OnMmoryCacheManager';
 import { MODE_R, MODE_RW } from './IndexedddbModeConsts';
 export class IndexeddbCore {
 	constructor(dbName) {
@@ -12,7 +11,6 @@ export class IndexeddbCore {
 		this.isUpdateOpen = false;
 		this.timer = null;
 		this.isDBClosed = true;
-		this.cacheManager = OnMmoryCacheManager.getInstance(dbName);
 	}
 
 	getOpenDB(newVersion) {
@@ -65,9 +63,6 @@ export class IndexeddbCore {
 		}
 	}
 	getObjectStore(db, tableName, tables, mode) {
-		if (mode === MODE_R) {
-			this.cacheManager.cacheClear();
-		}
 		const transaction = db.transaction(tables, mode);
 		transaction.oncomplete = event => {
 			this.closeDB();
@@ -82,9 +77,9 @@ export class IndexeddbCore {
 		return e => {
 			console.error(e);
 			if (e.stack) {
-				console.log(e.stack);
+				console.warn(e.stack);
 			} else {
-				console.log(e.message, e);
+				console.warn(e.message, e);
 			}
 			console.error(callerName ? callerName : '' + '/' + e);
 			throw new Error(e);
@@ -180,22 +175,15 @@ export class IndexeddbCore {
 	}
 	_selectByKeyOnTran(db, tableName, key, tables, mode = MODE_R) {
 		return new Promise((resolve, reject) => {
-			const cachekey = tableName + '_' + mode;
-			const cache = this.cacheManager.getCache(cachekey, key);
-			if (cache) {
-				resolve(cache);
-			} else {
-				const objectStore = this.getObjectStore(db, tableName, [tableName], mode);
-				const request = objectStore.get(key); //keyはsonomama
-				request.onsuccess = event => {
-					const result = request.result;
-					resolve(result);
-					this.cacheManager.setCache(cachekey, key, result);
-				};
-				request.onerror = e => {
-					reject(e);
-				};
-			}
+			const objectStore = this.getObjectStore(db, tableName, [tableName], mode);
+			const request = objectStore.get(key); //keyはsonomama
+			request.onsuccess = event => {
+				const result = request.result;
+				resolve(result);
+			};
+			request.onerror = e => {
+				reject(e);
+			};
 		});
 	}
 	//public
@@ -215,11 +203,7 @@ export class IndexeddbCore {
 	async _selectByKeysOnTranExec(objectStore, keys, tableName) {
 		const retMap = {};
 		for (let key of keys) {
-			const cache = this.cacheManager.getCache(tableName, key);
-			const result = cache ? cache : await this._getByKeyFromeObjectStore(objectStore, key);
-			if (!cache) {
-				this.cacheManager.setCache(tableName, key, result);
-			}
+			const result = await this._getByKeyFromeObjectStore(objectStore, key);
 			retMap[key] = result;
 		}
 		return retMap;
@@ -345,7 +329,6 @@ export class IndexeddbCore {
 		} else {
 			result = await this._updateExecute(db, tableName, key, data, tables).catch(this.throwNewError('_insertUpdate->_updateExecute tableName:' + tableName));
 		}
-		this.cacheManager.updateCache(tableName, key, result.data);
 		// const value2 = await this._selectByKeyOnTran(db, tableName, key, tables, MODE_RW);
 		// console.log(result);
 		// console.log(value2);
@@ -401,7 +384,6 @@ export class IndexeddbCore {
 						const key = cursor.key;
 						const or = objectStore.delete(key);
 						or.onsuccess = event => {
-							this.cacheManager.removeCache(tableName, key);
 							list.push(value);
 						};
 						or.onerror = e => {
@@ -434,7 +416,6 @@ export class IndexeddbCore {
 			const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
 			const request = objectStore.delete(key + '');
 			request.onsuccess = event => {
-				this.cacheManager.removeCache(tableName, key);
 				resolve({ tableName, key });
 			};
 			request.onerror = e => {
@@ -460,7 +441,6 @@ export class IndexeddbCore {
 			const objectStore = this.getObjectStore(db, tableName, tables, MODE_RW);
 			const request = objectStore.clear();
 			request.onsuccess = event => {
-				this.cacheManager.trancateCache(tableName);
 				resolve();
 			};
 			request.onerror = e => {
@@ -557,7 +537,6 @@ export class IndexeddbCore {
 		const newVersion = (await this.getCurrentVersion()) + 1;
 		const db = await this.getOpenDB(newVersion).catch(this.throwNewError('_dropStore->getOpenDB tableName:' + tableName));
 		db.deleteObjectStore(tableName);
-		this.cacheManager.trancateCache(tableName);
 		this.closeDB();
 		return;
 	}

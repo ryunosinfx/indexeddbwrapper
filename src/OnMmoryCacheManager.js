@@ -1,10 +1,10 @@
-import { MODE_R, MODE_RW } from './IndexedddbModeConsts';
 const cache = {};
 export class OnMmoryCacheManager {
 	constructor(dbName) {
+		this.maxSize = '';
 		this.dbName = dbName;
 		this.cache = {};
-		this.tableNames = {};
+		this.tableNames = [];
 	}
 	static getInstance(dbName) {
 		let instance = cache[dbName];
@@ -15,7 +15,7 @@ export class OnMmoryCacheManager {
 		return instance;
 	}
 	cacheClear() {
-		for (let tableName of tableNames) {
+		for (let tableName of this.tableNames) {
 			const tableCache = this.cache[tableName];
 			for (let index in tableCache) {
 				delete tableCache[index];
@@ -36,6 +36,7 @@ export class OnMmoryCacheManager {
 		let tableCache = this.cache[tableName];
 		if (!tableCache) {
 			tableCache = {};
+			this.tableNames.push(tableName);
 			this.cache[tableName] = tableCache;
 		}
 		tableCache[key] = value;
@@ -45,27 +46,19 @@ export class OnMmoryCacheManager {
 		return tableCache ? tableCache[key] : null;
 	}
 	updateCache(tableName, key, data) {
-		const cachekeyRW = tableName + '_' + MODE_RW;
+		const cachekeyRW = tableName;
 		this.setCache(cachekeyRW, key, data);
-		const cachekeyR = tableName + '_' + MODE_R;
-		this.setCache(cachekeyR, key, data);
 	}
 	trancateCache(tableName) {
-		const cachekeyRW = tableName + '_' + MODE_RW;
-		const cachekeyR = tableName + '_' + MODE_R;
+		const cachekeyRW = tableName;
 		delete this.cache[cachekeyRW];
-		delete this.cache[cachekeyR];
 	}
 	removeCache(tableName, key) {
-		const cachekeyRW = tableName + '_' + MODE_RW;
-		const cachekeyR = tableName + '_' + MODE_R;
+		const cachekeyRW = tableName;
 		const tableCacheA = this.cache[cachekeyRW];
 		if (tableCacheA) {
 			delete tableCacheA[key];
 		}
-		const tableCacheB = this.cache[cachekeyR];
-		if (tableCacheB) {
-			delete tableCacheB[key];
-		}
 	}
+	maintainCache() {}
 }

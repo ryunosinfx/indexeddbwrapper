@@ -1,4 +1,5 @@
 import { IndexeddbCore } from './IndexeddbCore';
+import { OnMmoryCacheManager } from './OnMmoryCacheManager';
 const MODE_R = 'readonly';
 const MODE_RW = 'readwrite';
 const cmdSelectAll = 'cmdSelectAll';
@@ -22,6 +23,11 @@ export class IndexeddbHelper {
 		this.lastTaskMode = null;
 		this.lastLockTime = new Date().getTime();
 		this.counter = 0;
+		this.isWithCache = true;
+		this.cacheManager = OnMmoryCacheManager.getInstance(dbName);
+	}
+	setWithCatche(isWithCache = true) {
+		this.isWithCache = isWithCache;
 	}
 
 	async deQueue() {
@@ -137,40 +143,97 @@ export class IndexeddbHelper {
 			// console.log("this.enQueueTask3:" + this.counter);
 		});
 	}
-
+	async getCache(cachekey, cmd, data, callback, isCacheEnable) {
+		if (!isCacheEnable) {
+			return await callback();
+		}
+		const key = JSON.stringify([cmd, data]);
+		const cache = this.cacheManager.getCache(cachekey, key);
+		if (cache) {
+			return cache;
+		}
+		const result = await callback();
+		this.cacheManager.updateCache(cachekey, key, result);
+		return cachekey;
+	}
+	clearCache(cachekey, isCacheEnable) {
+		if (isCacheEnable) {
+			this.cacheManager.trancateCache(cachekey);
+		}
+	}
 	async execCmd(cmd, data) {
+		const cachekey = data.tableName;
+		const isCacheEnable = data.isCacheEnable;
 		// console.log("cmd:" + cmd + "/data:" + data);
 		if (cmdSelectAll === cmd) {
-			return await this.core._selectAll(data.tableName, data.range, data.direction, data.offset, data.limmitCount);
+			return this.getCache(
+				cachekey,
+				cmd,
+				data,
+				async () => {
+					return await this.core._selectAll(data.tableName, data.range, data.direction, data.offset, data.limmitCount, isCacheEnable);
+				},
+				isCacheEnable
+			);
 		}
 		if (cmdSelectByKey === cmd) {
-			return await this.core._selectByKey(data.tableName, data.key);
+			return this.getCache(
+				cachekey,
+				cmd,
+				data,
+				async () => {
+					return await this.core._selectByKey(data.tableName, data.key);
+				},
+				isCacheEnable
+			);
 		}
 		if (cmdSelectByKeys === cmd) {
-			return await this.core._selectByKeys(data.tableName, data.keys);
+			return this.getCache(
+				cachekey,
+				cmd,
+				data,
+				async () => {
+					return await this.core._selectByKeys(data.tableName, data.keys);
+				},
+				isCacheEnable
+			);
 		}
 		if (cmdSelectFirstOne === cmd) {
-			return await this.core._selectFirstOne(data.tableName, data.range, data.direction);
+			return this.getCache(
+				cachekey,
+				cmd,
+				data,
+				async () => {
+					return await this.core._selectFirstOne(data.tableName, data.range, data.direction);
+				},
+				isCacheEnable
+			);
 		}
 		if (cmdBulkInsertUpdate === cmd) {
+			this.clearCache(cachekey, isCacheEnable);
 			return await this.core._bulkInsertUpdate(data.tableName, data.keyPathName, data.data, data.callback);
 		}
 		if (cmdInsertUpdate === cmd) {
+			this.clearCache(cachekey, isCacheEnable);
 			return await this.core._insertUpdate(data.tableName, data.keyPathName, data.data, data.callback);
 		}
 		if (cmdDeleteWithRange === cmd) {
+			this.clearCache(cachekey, isCacheEnable);
 			return await this.core._deleteWithRange(data.tableName, data.range, data.condetions);
 		}
 		if (cmdDelete === cmd) {
+			this.clearCache(cachekey, isCacheEnable);
 			return await this.core._delete(data.tableName, data.keyPathValue);
 		}
 		if (cmdTruncate === cmd) {
+			this.cacheManager.trancateCache(data.tableName);
 			return await this.core._truncate(data.tableName);
 		}
 		if (cmdCreateStore === cmd) {
 			return await this.core._createStore(data.tableName, data.keyPathName, data.isAutoIncrement);
 		}
 		if (cmdDeleteStore === cmd) {
+			this.cacheManager.cacheClear();
 			return await this.core._deleteStore(data.tableName);
 		}
 		if (cmdCreateIndex === cmd) {

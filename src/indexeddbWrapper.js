@@ -1,19 +1,13 @@
 import { IndexeddbAccessor } from './IndexeddbAccessor';
 import constant from './constant';
-const idbAccessors = new Map();
-let currentDbName = constant.dbName;
+const currentDbName = constant.dbName;
 export class idbw {
-	constructor(dbName) {
+	constructor(dbName = currentDbName) {
 		this.dbName = dbName;
 		// not use
 	}
-	async getObAccessor(obName, keyPathName = 'pk') {
-		if (idbAccessors.has(obName)) {
-			return idbAccessors.get(obName);
-		}
-		const accessor = new IndexeddbAccessor(obName, keyPathName, this.dbName);
-		idbAccessors.set(obName, accessor);
-		await accessor.init();
-		return accessor;
+	async init() {}
+	async getObAccessor(obName = currentDbName, keyPathName = 'pk') {
+		return await IndexeddbAccessor.getInstance(obName, keyPathName, this.dbName);
 	}
 }

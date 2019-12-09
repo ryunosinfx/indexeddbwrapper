@@ -4,6 +4,11 @@ const initQueue = [];
 let dbName = constant.dbName;
 // stock par db
 const idbHelperMap = new Map();
+const idbAccessors = new Map();
+let SystemDBAccessor = null;
+const systemDbName = constant.systemDbName;
+const cacheObName = constant.cacheObName;
+const keyPathName = 'pk';
 export class IndexeddbAccessor {
 	constructor(objectStoreName, keypathName = constant.keypathName, isAutoincrements = false, currentDbName = dbName) {
 		if (!idbHelperMap.has(currentDbName)) {
@@ -19,12 +24,22 @@ export class IndexeddbAccessor {
 	static setDbName(dbNameNew) {
 		dbName = dbNameNew;
 	}
-	static async getInstance(objectStoreName, keypathNamee, isAutoincrements, currentDbName) {
+	static async getInstance(objectStoreName, keypathNamee, isAutoincrements = false, currentDbName = dbName, isCacheEnable = true) {
+		const key = JSON.stringify([currentDbName, objectStoreName]);
+		if (idbAccessors.has(key)) {
+			return idbAccessors.get(key);
+		}
+		if (!SystemDBAccessor) {
+			SystemDBAccessor = true;
+			SystemDBAccessor = await IndexeddbAccessor.getInstance(cacheObName, keyPathName, false, systemDbName, false);
+		}
 		const inst = new IndexeddbAccessor(objectStoreName, keypathNamee, isAutoincrements, currentDbName);
-		await inst.init();
+		await inst.init(isCacheEnable);
+		idbAccessors.set(key, inst);
 		return inst;
 	}
-	init() {
+	init(isEnableCache = true) {
+		this.isEnableCache = isEnableCache;
 		return new Promise((reslve, reject) => {
 			this.idbh.createStore(this.objectStoreName, this.keyPathName, this.isAutoincrements).then(
 				() => {
@@ -36,6 +51,12 @@ export class IndexeddbAccessor {
 				}
 			);
 		});
+	}
+	async dump() {
+		return {};
+	}
+	async restore(dumpData) {
+		return;
 	}
 	async putByMap(dataMap, callback) {
 		const record = {
@@ -67,20 +88,20 @@ export class IndexeddbAccessor {
 		} else if (key !== undefined) {
 		}
 		//console.log("saveData 003:" + key + "/" + dataObj +"/this.objectStoreName:"+this.objectStoreName);
-		const value = await this.idbh.insertUpdate(this.objectStoreName, this.keyPathName, storeData, callback);
+		const value = await this.idbh.insertUpdate(this.objectStoreName, this.keyPathName, storeData, callback, this.isEnableCache);
 		// console.log('saveData 004:' + key + '/' + dataObj + '/' + JSON.stringify(value) + '/' + value.data.data);
 		return value;
 	}
 	async getAsMap(keys) {
 		if (keys !== undefined) {
-			const recordAsLoadedData = await this.idbh.selectByKeys(this.objectStoreName, keys);
+			const recordAsLoadedData = await this.idbh.selectByKeys(this.objectStoreName, keys, this.isEnableCache);
 			return recordAsLoadedData;
 		}
 		return null;
 	}
 	async getRecord(key) {
 		if (key !== undefined) {
-			const recordAsLoadedData = await this.idbh.selectByKey(this.objectStoreName, key);
+			const recordAsLoadedData = await this.idbh.selectByKey(this.objectStoreName, key, this.isEnableCache);
 			return recordAsLoadedData;
 		}
 		return null;
@@ -90,13 +111,19 @@ export class IndexeddbAccessor {
 		return recordAsDefaultLoad === undefined || recordAsDefaultLoad === null ? null : recordAsDefaultLoad.data;
 	}
 	async getAll() {
-		return await this.idbh.selectAll(this.objectStoreName);
+		return await this.idbh.selectAll(this.objectStoreName, this.isEnableCache);
 	}
 	async delete(key) {
 		if (key !== undefined) {
-			return await this.idbh.delete(this.objectStoreName, key);
+			return await this.idbh.delete(this.objectStoreName, key, this.isEnableCache);
 		}
-		return null;
+		return;
+	}
+	async remove(key) {
+		return await this.delete(key);
+	}
+	async truncate(key) {
+		return await this.idbh.truncate(this.objectStoreName, this.isEnableCache);
 	}
 	async getOsNames() {
 		return await this.idbh.getObjectStoreNames();

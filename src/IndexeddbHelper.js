@@ -18,13 +18,16 @@ const cmdDeleteIndex = 'cmdDeleteIndex';
 const cmdGetObjectStoreNames = 'cmdGetObjectStoreNames';
 export class IndexeddbHelper {
 	constructor(dbName) {
+		this.dbName = dbName;
 		this.core = new IndexeddbCore(dbName);
 		this.queue = [];
 		this.lastTaskMode = null;
 		this.lastLockTime = new Date().getTime();
 		this.counter = 0;
 		this.isWithCache = true;
-		this.cacheManager = OnMmoryCacheManager.getInstance(dbName);
+	}
+	async init() {
+		this.cacheManager = await OnMmoryCacheManager.getInstance(this.dbName);
 	}
 	setWithCatche(isWithCache = true) {
 		this.isWithCache = isWithCache;
@@ -148,13 +151,13 @@ export class IndexeddbHelper {
 			return await callback();
 		}
 		const key = JSON.stringify([cmd, data]);
-		const cache = this.cacheManager.getCache(cachekey, key);
+		const cache = await this.cacheManager.getCache(cachekey, key);
 		if (cache) {
 			return cache;
 		}
 		const result = await callback();
 		this.cacheManager.updateCache(cachekey, key, result);
-		return cachekey;
+		return result;
 	}
 	clearCache(cachekey, isCacheEnable) {
 		if (isCacheEnable) {
@@ -248,62 +251,62 @@ export class IndexeddbHelper {
 	}
 
 	//Select In-line-Keyで返す。
-	async selectAllForwardMatch(tableName, key, direction, offset, limmitCount) {
+	async selectAllForwardMatch(tableName, key, direction, offset, limmitCount, isCacheEnable = true) {
 		const nextKey = key.slice(0, -1) + String.fromCharCode(key.slice(-1).charCodeAt() + 1);
 		const range = IDBKeyRange.bound(str, nextStr, false, true);
-		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
+		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount, isCacheEnable });
 	}
 	//Select In-line-Keyで返す。
-	async selectAll(tableName, range, direction, offset, limmitCount) {
-		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount });
+	async selectAll(tableName, range, direction, offset, limmitCount, isCacheEnable = true) {
+		return await this.enQueueReadTask(cmdSelectAll, { tableName, range, direction, offset, limmitCount, isCacheEnable });
 	}
 	//Select In-line-return promise;Keyで返す。
-	async selectByKey(tableName, key) {
-		return await this.enQueueReadTask(cmdSelectByKey, { tableName, key });
+	async selectByKey(tableName, key, isCacheEnable = true) {
+		return await this.enQueueReadTask(cmdSelectByKey, { tableName, key, isCacheEnable });
 	}
 	//Select In-line-return promise;Keyで返す。
-	async selectByKeys(tableName, keys) {
-		return await this.enQueueReadTask(cmdSelectByKeys, { tableName, keys });
+	async selectByKeys(tableName, keys, isCacheEnable = true) {
+		return await this.enQueueReadTask(cmdSelectByKeys, { tableName, keys, isCacheEnable });
 	}
 	//Select FirstOnek
-	async selectFirstOne(tableName, range, direction) {
-		return await this.enQueueReadTask(cmdSelectFirstOne, { tableName, range, direction });
+	async selectFirstOne(tableName, range, direction, isCacheEnable = true) {
+		return await this.enQueueReadTask(cmdSelectFirstOne, { tableName, range, direction, isCacheEnable });
 	}
 
 	//private
-	async bulkInsertUpdate(tableName, keyPathName, data, callback) {
-		return await this.enQueueWriteTask(cmdBulkInsertUpdate, { tableName, keyPathName, data, callback });
+	async bulkInsertUpdate(tableName, keyPathName, data, callback, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdBulkInsertUpdate, { tableName, keyPathName, data, callback, isCacheEnable });
 	}
 
 	//private
-	async insertUpdate(tableName, keyPathName, data, callback) {
-		return await this.enQueueWriteTask(cmdInsertUpdate, { tableName, keyPathName, data, callback });
+	async insertUpdate(tableName, keyPathName, data, callback, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdInsertUpdate, { tableName, keyPathName, data, callback, isCacheEnable });
 	}
 	//Delete
-	async deleteWithRange(tableName, range, condetions) {
-		return await this.enQueueWriteTask(cmdDeleteWithRange, { tableName, range, direction });
+	async deleteWithRange(tableName, range, condetions, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdDeleteWithRange, { tableName, range, direction, isCacheEnable });
 	}
 	//Delete
-	async delete(tableName, keyPathValue) {
-		return await this.enQueueWriteTask(cmdDelete, { tableName, keyPathValue });
+	async delete(tableName, keyPathValue, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdDelete, { tableName, keyPathValue, isCacheEnable });
 	}
 	//truncate
-	async truncate(tableName) {
-		return await this.enQueueWriteTask(cmdTruncate, { tableName });
+	async truncate(tableName, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdTruncate, { tableName, isCacheEnable });
 	}
-	//truncate
-	async createStore(tableName, keyPathName, isAutoIncrement) {
-		return await this.enQueueWriteTask(cmdCreateStore, { tableName, keyPathName, isAutoIncrement });
+	//createStore
+	async createStore(tableName, keyPathName, isAutoIncrement, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdCreateStore, { tableName, keyPathName, isAutoIncrement, isCacheEnable });
 	}
-	//truncate
-	async deleteStore(tableName) {
-		return await this.enQueueWriteTask(cmdDeleteStore, { tableName });
+	//deleteStore
+	async deleteStore(tableName, isCacheEnable = true) {
+		return await this.enQueueWriteTask(cmdDeleteStore, { tableName, isCacheEnable });
 	}
-	//truncate
+	//creatIndex
 	async creatIndex(tableName, keyPathName, isMultiColumns) {
 		return await this.enQueueWriteTask(cmdCreateIndex, { tableName, keyPathName, isMultiColumns });
 	}
-	//truncate
+	//deleteIndex
 	async deleteIndex(tableName, indexName) {
 		return await this.enQueueWriteTask(cmdDeleteIndex, { tableName, indexName });
 	}

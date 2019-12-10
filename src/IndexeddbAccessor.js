@@ -41,15 +41,17 @@ export class IndexeddbAccessor {
 	init(isEnableCache = true) {
 		this.isEnableCache = isEnableCache;
 		return new Promise((reslve, reject) => {
-			this.idbh.createStore(this.objectStoreName, this.keyPathName, this.isAutoincrements).then(
-				() => {
-					reslve(true);
-				},
-				e => {
-					reject(e);
-					throw e;
-				}
-			);
+			this.idbh.init().then(() => {
+				this.idbh.createStore(this.objectStoreName, this.keyPathName, this.isAutoincrements).then(
+					() => {
+						reslve(true);
+					},
+					e => {
+						reject(e);
+						throw e;
+					}
+				);
+			});
 		});
 	}
 	async dump() {

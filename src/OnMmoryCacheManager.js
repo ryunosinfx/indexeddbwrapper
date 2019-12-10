@@ -1,18 +1,45 @@
+import { IndexeddbCore } from './IndexeddbCore';
+import constant from './constant';
 const cache = {};
+const systemDbName = constant.systemDbName;
+const keypathName = constant.keypathName;
+const cacheObName = 'cache';
+const core = new IndexeddbCore(systemDbName);
+
 export class OnMmoryCacheManager {
 	constructor(dbName) {
 		this.maxSize = '';
 		this.dbName = dbName;
 		this.cache = {};
 		this.tableNames = [];
+		this.lastUpdateDateMap = {};
 	}
-	static getInstance(dbName) {
+	static async getInstance(dbName) {
 		let instance = cache[dbName];
 		if (instance) {
 			return instance;
 		}
 		instance = new OnMmoryCacheManager(dbName);
+		await instance.init();
 		return instance;
+	}
+	async init() {
+		await core._createStore(cacheObName, keypathName, false);
+	}
+	cacheClearWithDbUpdate(tableName) {
+		const tableCache = this.cache[tableName];
+		for (let index in tableCache) {
+			delete tableCache[index];
+		}
+		this.registeCacherUpdateTime(tableName);
+	}
+	async registeCacherUpdateTime(tableName, now = Date.now()) {
+		this.lastUpdateDateMap[tableName] = now;
+		//////
+		const dbTableKey = JSON.stringify([this.dbName, tableName]);
+		const updateTimeData = { updateTime: now };
+		updateTimeData[keypathName] = dbTableKey;
+		core._insertUpdate(cacheObName, keypathName, updateTimeData);
 	}
 	cacheClear() {
 		for (let tableName of this.tableNames) {
@@ -22,7 +49,7 @@ export class OnMmoryCacheManager {
 			}
 		}
 	}
-	setCache(tableName, key, value) {
+	async setCache(tableName, key, value) {
 		if (!value || !value.data) {
 			return;
 		}
@@ -33,6 +60,17 @@ export class OnMmoryCacheManager {
 				return;
 			}
 		}
+
+		const dbTableKey = JSON.stringify([this.dbName, tableName]);
+		const result = await core._selectByKey(cacheObName, dbTableKey);
+		if (result && result.updateTime !== this.lastUpdateDateMap[tableName]) {
+			this.cacheClearWithDbUpdate(tableName);
+			return null;
+		} else if (!this.lastUpdateDateMap[tableName] && result.updateTime) {
+			this.registeCacherUpdateTime(tableName, result.updateTime);
+		} else if (!result.updateTime) {
+			this.registeCacherUpdateTime(tableName);
+		}
 		let tableCache = this.cache[tableName];
 		if (!tableCache) {
 			tableCache = {};
@@ -41,7 +79,13 @@ export class OnMmoryCacheManager {
 		}
 		tableCache[key] = value;
 	}
-	getCache(tableName, key) {
+	async getCache(tableName, key) {
+		const dbTableKey = JSON.stringify([this.dbName, tableName]);
+		const result = await core._selectByKey(cacheObName, dbTableKey);
+		if (result && result.updateTime !== this.lastUpdateDateMap[tableName]) {
+			this.cacheClearWithDbUpdate(tableName);
+			return null;
+		}
 		const tableCache = this.cache[tableName];
 		return tableCache ? tableCache[key] : null;
 	}
@@ -50,8 +94,7 @@ export class OnMmoryCacheManager {
 		this.setCache(cachekeyRW, key, data);
 	}
 	trancateCache(tableName) {
-		const cachekeyRW = tableName;
-		delete this.cache[cachekeyRW];
+		this.cacheClearWithDbUpdate(tableName);
 	}
 	removeCache(tableName, key) {
 		const cachekeyRW = tableName;

@@ -61,13 +61,15 @@ export class IndexeddbAccessor {
 		return;
 	}
 	async putByMap(dataMap, callback) {
-		const record = {
-			data: data
-		};
-		record[this.keyPathName] = key;
-		//console.log("saveDataDefault 001:" + key + "/" + data);
-		await this.putRecord(record, undefined, callback);
-		//console.log("saveDataDefault 002:" + key + "/" + data);
+		for (let key in dataMap) {
+			const record = {
+				data: dataMap[key]
+			};
+			record[this.keyPathName] = key;
+			//console.log("saveDataDefault 001:" + key + "/" + data);
+			await this.putRecord(record, undefined, callback);
+			//console.log("saveDataDefault 002:" + key + "/" + data);putByMap
+		}
 	}
 	async put(key, data, callback) {
 		const record = {
@@ -124,7 +126,7 @@ export class IndexeddbAccessor {
 	async remove(key) {
 		return await this.delete(key);
 	}
-	async truncate(key) {
+	async truncate() {
 		return await this.idbh.truncate(this.objectStoreName, this.isEnableCache);
 	}
 	async getOsNames() {

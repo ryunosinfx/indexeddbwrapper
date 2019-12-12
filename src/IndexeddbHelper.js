@@ -34,7 +34,6 @@ export class IndexeddbHelper {
 	}
 
 	async deQueue() {
-		// console.log("deQueue1---:this.counter:" + this.counter);
 		if (this.counter < 1) {
 			this.counter++;
 			if (this.counter > 1) {
@@ -44,12 +43,9 @@ export class IndexeddbHelper {
 				}, 0);
 			} else {
 				await this.deQueueExec();
-				// console.log("deQueue2:this.queue.length:" + this.queue.length);
 				this.counter--;
 
-				// console.log("deQueue3:this.counter:" + this.counter);
 				if (this.counter < 1 && this.queue.length > 0) {
-					// console.log("deQueue4:this.counter:" + this.counter);
 					this.deQueue();
 				}
 			}
@@ -58,11 +54,9 @@ export class IndexeddbHelper {
 	deQueueExec() {
 		return new Promise((resolve, reject) => {
 			while (this.queue.length > 0) {
-				// console.log("deQueueExec:1" + "this.counter:" + this.counter);
 				const promises = [];
 				const selectTasks = [];
 				while (this.queue.length > 0) {
-					// console.log("deQueueExec:2" + "this.counter:" + this.counter);
 					const task = this.queue.shift();
 					if (task) {
 						if (this.lastTaskMode !== task.mode || task.mode === MODE_RW) {
@@ -139,11 +133,8 @@ export class IndexeddbHelper {
 	enQueueTask(cmd, data, mode) {
 		return new Promise((resolve, reject) => {
 			const task = { cmd, data, resolve, reject, mode };
-			// console.log("this.enQueueTask1:" + this.counter);
 			this.queue.push(task);
-			// console.log("this.enQueueTask2:" + this.counter);
 			this.deQueue();
-			// console.log("this.enQueueTask3:" + this.counter);
 		});
 	}
 	async getCache(cachekey, cmd, data, callback, isCacheEnable) {
@@ -167,7 +158,6 @@ export class IndexeddbHelper {
 	async execCmd(cmd, data) {
 		const cachekey = data.tableName;
 		const isCacheEnable = data.isCacheEnable;
-		// console.log("cmd:" + cmd + "/data:" + data);
 		if (cmdSelectAll === cmd) {
 			return this.getCache(
 				cachekey,

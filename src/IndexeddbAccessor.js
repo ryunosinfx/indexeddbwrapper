@@ -66,9 +66,7 @@ export class IndexeddbAccessor {
 				data: dataMap[key]
 			};
 			record[this.keyPathName] = key;
-			//console.log("saveDataDefault 001:" + key + "/" + data);
 			await this.putRecord(record, undefined, callback);
-			//console.log("saveDataDefault 002:" + key + "/" + data);putByMap
 		}
 	}
 	async put(key, data, callback) {
@@ -76,14 +74,10 @@ export class IndexeddbAccessor {
 			data: data
 		};
 		record[this.keyPathName] = key;
-		//console.log("saveDataDefault 001:" + key + "/" + data);
 		await this.putRecord(record, undefined, callback);
-		//console.log("saveDataDefault 002:" + key + "/" + data);
 	}
 	async putRecord(record, key, callback) {
-		//console.log("saveData 001:" + key + "/" + JSON.stringify(dataObj)+"/dataObj.data:"+dataObj.data);
 		const storeData = record;
-		//console.log("saveData 002:" + key + "/" + dataObj[this.keyPathName]);
 		if (record[this.keyPathName] === undefined) {
 			storeData = {
 				data: record
@@ -91,9 +85,7 @@ export class IndexeddbAccessor {
 			storeData[this.keyPathName] = key;
 		} else if (key !== undefined) {
 		}
-		//console.log("saveData 003:" + key + "/" + dataObj +"/this.objectStoreName:"+this.objectStoreName);
 		const value = await this.idbh.insertUpdate(this.objectStoreName, this.keyPathName, storeData, callback, this.isEnableCache);
-		// console.log('saveData 004:' + key + '/' + dataObj + '/' + JSON.stringify(value) + '/' + value.data.data);
 		return value;
 	}
 	async getAsMap(keys) {

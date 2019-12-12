@@ -31,6 +31,7 @@ export class OnMmoryCacheManager {
 		for (let index in tableCache) {
 			delete tableCache[index];
 		}
+		OnMmoryCacheManager;
 		this.registeCacherUpdateTime(tableName);
 	}
 	async registeCacherUpdateTime(tableName, now = Date.now()) {

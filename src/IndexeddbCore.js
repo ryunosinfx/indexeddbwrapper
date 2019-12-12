@@ -125,7 +125,7 @@ export class IndexeddbCore {
 			const endCount = offset + count;
 			const list = [];
 			let rowCount = 0;
-			const req = range === undefined ? objectStore.openCursor() : objectStore.openCursor(range);
+			const req = range ? objectStore.openCursor() : objectStore.openCursor(range);
 			req.onsuccess = event => {
 				const cursor = event.target.result;
 				if (cursor) {
@@ -510,7 +510,7 @@ export class IndexeddbCore {
 	}
 	//createStore
 	async _createStore(tableName, keyPathName, isAutoIncrement) {
-		const isExistsObjectStore = await this.isExistsObjectStore();
+		const isExistsObjectStore = await this.isExistsObjectStore(tableName);
 		if (isExistsObjectStore === false) {
 			const newVersion = (await this.getCurrentVersion()) + 1;
 			const db = await this.getOpenDB(newVersion).catch(this.throwNewError('_createStore->getOpenDB tableName:' + tableName));

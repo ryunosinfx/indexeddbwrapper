@@ -89,4 +89,42 @@ describe('テスト IndexeddbWrapper', () => {
 		expect(B).to.be.equal(A);
 		expect(B).to.not.equal(C);
 	});
+	it('put and getAll!', async () => {
+		const db = new idbw('indexeddbWrapper-test');
+		const objectStoreName = 'aaaaA';
+		const key = 'ccccc';
+		const key1 = 'ccccc1';
+		//default keyPathName = "pk"
+		console.log('A0');
+		const ac = await db.getObAccessor(objectStoreName);
+		console.log('A');
+		await ac.truncate();
+		console.log('A1');
+
+		const list = await ac.getAll();
+		console.log('A2');
+
+		expect(list.length).to.be.equal(0);
+		console.log('A3');
+		const data = { z: 'aaaaa' };
+		const data1 = { z: 'aaaaa' };
+		await ac.put(key, data);
+		console.log('A4');
+		await ac.put(key1, data1);
+		console.log('A5');
+		const list1 = await ac.getAll();
+		console.log('A6');
+
+		expect(list1.length).to.be.equal(2);
+		await ac.truncate();
+		const result = await ac.get(key);
+		const result2 = await ac.get(key1);
+		const A = JSON.stringify(data);
+		const B = JSON.stringify(result);
+		const C = JSON.stringify(result2);
+		console.log(A);
+		console.log(typeof result);
+		expect(B).to.not.equal(A);
+		expect(B).to.be.equal(C);
+	});
 });

@@ -22,38 +22,57 @@ const idbwInstance = new idbw(databaseName);
 
 export class Test(){
 
-	constructor(dbName) {
+  constructor(dbName) {
   }
   async test(){
 
-		const objectStoreName = 'aaaa';
+    const objectStoreName = 'aaaa';
     // KVSのキーを用意しましょう。
-		const key = 'bbbb';
-		//default keyPathName = "pk"
+    const key = 'bbbb';
+    //default keyPathName = "pk"
     // ObjectStore毎にアクセッサーを生成します。
-		const ac = await idbwInstance.getObAccessor(objectStoreName);
+    const ac = await idbwInstance.getObAccessor(objectStoreName);
     // データを用意
-		const data = { z: 'aaaaa' };
+    const data = { z: 'aaaaa' };
     // 記録
-		await ac.put(key, data);
+    await ac.put(key, data);
     // 取得※一本釣り、無い場合はnull
-		const result = await ac.get(key);
-		const key2 = 'bbbb';
+    const result = await ac.get(key);
+    const key2 = 'bbbb';
     const keys = [key2,key];
     // 取得※Obejctで
-		const resultMap = await ac.getAsMap(keys);
+    const resultMap = await ac.getAsMap(keys);
     // 全部取得
-		const results = await ac.getAll();
+    const results = await ac.getAll();
     // 一括登録
-		await ac.putByMap(resultMap);
+    await ac.putByMap(resultMap);
 
     // 削除
-		await ac.delete(key);
+    await ac.delete(key);
     // ObjectStore全部消し
-		await ac.truncate();
+    await ac.truncate();
 
     // 該当DBのObjectStore名一覧取得
-		const objectStoreNames = await ac.getOsNames();
+    const objectStoreNames = await ac.getOsNames();
   }
 
 ```
+
+## add dbs
+
+標準で次のDBを作ります。
+
+ * IDBWrapperSys
+
+## test
+
+
+```
+
+npm test
+
+```
+
+opne 
+
+http://localhost:8083/testmocha.html
